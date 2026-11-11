@@ -16,7 +16,8 @@ export function carrefourFlightText(text: string): string {
   }
   if (!chunks.length) {
     const blocked = /access denied|captcha|robot|request rejected|incident id|challenge/i.test(text);
-    throw new Error(`Carrefour HTML has no search data (${blocked ? 'possible access challenge' : 'unexpected page'}, ${text.length} characters)`);
+    const shortMessage = text.length <= 256 ? text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100) : '';
+    throw new Error(`Carrefour HTML has no search data (${blocked ? 'possible access challenge' : 'unexpected page'}, ${text.length} characters)${shortMessage ? `: ${shortMessage}` : ''}`);
   }
   return chunks.join('');
 }
@@ -65,7 +66,9 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   if (query.city !== 'الرياض' || query.storeLocationId) throw new Error('Only default Granada Riyadh scope is supported');
   const url = new URL('https://www.carrefourksa.com/mafsau/ar/search');
   url.searchParams.set('keyword',query.term);
-  const response = await fetch(url,{signal,headers:{RSC:'1',Accept:'text/x-component'}});
+  // Request the public document directly. Some upstream edges return a tiny
+  // HTML shell for RSC requests from hosted servers.
+  const response = await fetch(url,{signal,headers:{Accept:'text/html'},cache:'no-store'});
   if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
   const text = await response.text();
   const contentType = response.headers.get('content-type') ?? 'unknown';
