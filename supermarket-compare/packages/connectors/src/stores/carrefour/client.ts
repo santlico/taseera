@@ -49,8 +49,12 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   const url = new URL('https://www.carrefourksa.com/mafsau/ar/search');
   url.searchParams.set('keyword',query.term);
   const response = await fetch(url,{signal,headers:{RSC:'1',Accept:'text/x-component'}});
-  if (!response.ok) throw new Error('Carrefour search request failed');
+  if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
   const text = await response.text();
+  const contentType = response.headers.get('content-type') ?? 'unknown';
+  if (!contentType.includes('text/x-component')) {
+    throw new Error(`Carrefour returned an unexpected response (HTTP ${response.status}, ${contentType})`);
+  }
   // Verify upstream default scope rather than silently presenting another city.
   if (!text.includes('"defaultAreaCode":"Granada - Riyadh"')) throw new Error('Carrefour default location changed');
   return parseCarrefourResponse(text);

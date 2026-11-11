@@ -61,7 +61,14 @@ export async function searchStores(
       });
       const products = await Promise.race([connector.search(normalized, controller.signal), timeout]);
       return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start };
-    } catch {
+    } catch (error) {
+      // Keep diagnostics on the server; never expose upstream details to clients.
+      console.warn('Store search failed', {
+        store: connector.id,
+        timedOut: controller.signal.aborted,
+        durationMs: Date.now() - start,
+        reason: error instanceof Error ? error.message : 'Unknown connector error',
+      });
       return { store: connector.id, status: controller.signal.aborted ? 'timeout' : 'error', products: [],
         durationMs: Date.now() - start, message: controller.signal.aborted ? 'Store request timed out' : 'Store search failed' };
     } finally { clearTimeout(timer); }
