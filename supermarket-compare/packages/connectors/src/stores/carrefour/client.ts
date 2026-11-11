@@ -5,8 +5,25 @@ function object(value: unknown): value is JsonObject {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Decode only JSON string chunks; never execute scripts from the upstream page. */
+export function carrefourFlightText(text: string): string {
+  if (!/^\s*</.test(text)) return text;
+  const chunks: string[] = [];
+  for (const script of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)) {
+    for (const match of script[1].matchAll(/\bself\.__next_f\.push\(\[1,\s*("(?:[^"\\]|\\.)*")\s*\]\)/g)) {
+      try { chunks.push(JSON.parse(match[1])); } catch { /* Ignore malformed chunks. */ }
+    }
+  }
+  if (!chunks.length) {
+    const blocked = /access denied|captcha|robot|request rejected|incident id|challenge/i.test(text);
+    throw new Error(`Carrefour HTML has no search data (${blocked ? 'possible access challenge' : 'unexpected page'}, ${text.length} characters)`);
+  }
+  return chunks.join('');
+}
+
 /** Read JSON records in Flight without evaluating JS or interpreting executable content. */
 export function parseCarrefourResponse(text: string): Product[] {
+  text = carrefourFlightText(text);
   const products = new Map<string, Product>();
   let searchDataFound = false;
   function readProduct(value: unknown) {
@@ -52,10 +69,11 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
   const text = await response.text();
   const contentType = response.headers.get('content-type') ?? 'unknown';
-  if (!contentType.includes('text/x-component')) {
+  if (!contentType.includes('text/x-component') && !contentType.includes('text/html')) {
     throw new Error(`Carrefour returned an unexpected response (HTTP ${response.status}, ${contentType})`);
   }
   // Verify upstream default scope rather than silently presenting another city.
-  if (!text.includes('"defaultAreaCode":"Granada - Riyadh"')) throw new Error('Carrefour default location changed');
-  return parseCarrefourResponse(text);
+  const flight = carrefourFlightText(text);
+  if (!flight.includes('"defaultAreaCode":"Granada - Riyadh"')) throw new Error('Carrefour default location changed');
+  return parseCarrefourResponse(flight);
 }
