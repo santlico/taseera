@@ -1,0 +1,10 @@
+# Local research captures and generated reports
+/supermarket-compare/.taste-skill/
+/supermarket-compare/reports/
+/supermarket-compare/*.html
+/supermarket-compare/*-results.json
+/supermarket-compare/*-result.json
+/supermarket-compare/*-stores.json
+/supermarket-compare/*-rsc.txt
+/supermarket-compare/danube-frontend.js
+/supermarket-compare/font-source.css
