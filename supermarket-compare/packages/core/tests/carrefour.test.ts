@@ -31,6 +31,8 @@ test('Carrefour requests a normal document and validates its location',async(t)=
     assert.equal(new URL(String(input)).searchParams.get('keyword'),'حليب');
     assert.equal(new Headers(init?.headers).get('RSC'),null);
     assert.equal(new Headers(init?.headers).get('Accept'),'text/html');
+    assert.match(new Headers(init?.headers).get('Accept-Language')!, /^ar-SA/);
+    assert.match(new Headers(init?.headers).get('User-Agent')!, /^Taseera\/1\.0/);
     return new Response('<html><script>self.__next_f.push([1,'+JSON.stringify(flight)+'])</script></html>',{headers:{'content-type':'text/html'}});
   });
   const products=await searchCarrefour({term:'حليب',city:'الرياض'},new AbortController().signal);
@@ -49,7 +51,7 @@ test('Carrefour logs bounded upstream diagnostics on rejected pages', async (t) 
   });
   await assert.rejects(searchCarrefour({term: 'private', city: 'الرياض'}, new AbortController().signal));
   assert.deepEqual(warnings, [['Carrefour upstream response rejected', {
-    status: 200, contentType: 'text/html', finalUrl: 'https://www.carrefourksa.com/mafsau/ar/search',
+    transport: 'fetch', status: 200, contentType: 'text/html', finalUrl: 'https://www.carrefourksa.com/mafsau/ar/search',
     redirected: false, bodyLength: body.length, shortBody: body,
   }]]);
 });
@@ -64,4 +66,24 @@ test('Carrefour omits long response bodies from diagnostics, including HTTP erro
   assert.equal(details.status, 403);
   assert.equal(details.bodyLength, 257);
   assert.equal(details.shortBody, undefined);
+});
+
+
+test('Carrefour retries the observed empty shell through native HTTPS and validates products', async (t) => {
+  const https = (await import('node:https')).default;
+  const {EventEmitter} = await import('node:events');
+  const flight = '0:' + JSON.stringify({defaultAreaCode: 'Granada - Riyadh'}) + '\n' + record([product]);
+  const html = '<html><script>self.__next_f.push([1,' + JSON.stringify(flight) + '])</script></html>';
+  t.mock.method(console, 'warn', () => {});
+  t.mock.method(console, 'info', () => {});
+  t.mock.method(globalThis, 'fetch', async () => new Response('<!DOCTYPE html> <html> <body> <p></p> </body> </html>', {headers: {'content-type':'text/html'}}));
+  const get = t.mock.method(https, 'get', (url: unknown, options: unknown, callback: (response: unknown) => void) => {
+    assert.equal(new URL(String(url)).hostname, 'www.carrefourksa.com');
+    const response = Object.assign(new EventEmitter(), {statusCode: 200, headers: {'content-type': 'text/html'}});
+    queueMicrotask(() => { callback(response); response.emit('data', Buffer.from(html)); response.emit('end'); });
+    return new EventEmitter();
+  });
+  const products = await searchCarrefour({term: 'milk', city: 'الرياض'}, new AbortController().signal);
+  assert.equal(products[0].id, product.productId);
+  assert.equal(get.mock.callCount(), 1);
 });

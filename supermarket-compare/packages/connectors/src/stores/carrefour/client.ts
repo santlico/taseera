@@ -1,3 +1,4 @@
+import { carrefourHeaders, fetchCarrefourDocument } from './document';
 import type { Product, SearchQuery } from '@market/core';
 
 type JsonObject = Record<string, unknown>;
@@ -68,8 +69,18 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   url.searchParams.set('keyword',query.term);
   // Request the public document directly. Some upstream edges return a tiny
   // HTML shell for RSC requests from hosted servers.
-  const response = await fetch(url,{signal,headers:{Accept:'text/html'},cache:'no-store'});
-  const text = await response.text();
+  let response = await fetch(url,{signal,headers:carrefourHeaders,cache:'no-store'});
+  let text = await response.text();
+  let transport = 'fetch';
+  // An empty 200 document is not an empty product search. Try the standard
+  // Node HTTPS transport once; use no browser identity, cookies, or session tokens.
+  if (response.ok && text.length <= 256 && /^<!doctype html>\s*<html>\s*<body>\s*<p>\s*<\/p>\s*<\/body>\s*<\/html>$/i.test(text.trim())) {
+    console.warn('Carrefour empty document; trying native HTTPS', {status: response.status, bodyLength: text.length});
+    response = await fetchCarrefourDocument(url, signal);
+    text = await response.text();
+    transport = 'node:https';
+    console.info('Carrefour native HTTPS response', {status: response.status, bodyLength: text.length});
+  }
   const contentType = response.headers.get('content-type') ?? 'unknown';
   try {
     if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
@@ -89,6 +100,7 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
       finalUrl = final.origin + final.pathname;
     } catch { /* A synthetic response may not have a URL. */ }
     console.warn('Carrefour upstream response rejected', {
+      transport,
       status: response.status,
       contentType,
       finalUrl,
