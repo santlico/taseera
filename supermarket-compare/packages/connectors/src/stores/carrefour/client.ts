@@ -69,14 +69,33 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   // Request the public document directly. Some upstream edges return a tiny
   // HTML shell for RSC requests from hosted servers.
   const response = await fetch(url,{signal,headers:{Accept:'text/html'},cache:'no-store'});
-  if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
   const text = await response.text();
   const contentType = response.headers.get('content-type') ?? 'unknown';
-  if (!contentType.includes('text/x-component') && !contentType.includes('text/html')) {
-    throw new Error(`Carrefour returned an unexpected response (HTTP ${response.status}, ${contentType})`);
+  try {
+    if (!response.ok) throw new Error(`Carrefour search request failed (HTTP ${response.status})`);
+    if (!contentType.includes('text/x-component') && !contentType.includes('text/html')) {
+      throw new Error(`Carrefour returned an unexpected response (HTTP ${response.status}, ${contentType})`);
+    }
+    // Verify upstream default scope rather than silently presenting another city.
+    const flight = carrefourFlightText(text);
+    if (!flight.includes('"defaultAreaCode":"Granada - Riyadh"')) throw new Error('Carrefour default location changed');
+    return parseCarrefourResponse(flight);
+  } catch (error) {
+    // Server-only diagnostics: never log cookies, headers, or a full product page.
+    // Strip query parameters from the final URL to avoid recording search terms.
+    let finalUrl = 'unavailable';
+    try {
+      const final = new URL(response.url);
+      finalUrl = final.origin + final.pathname;
+    } catch { /* A synthetic response may not have a URL. */ }
+    console.warn('Carrefour upstream response rejected', {
+      status: response.status,
+      contentType,
+      finalUrl,
+      redirected: response.redirected,
+      bodyLength: text.length,
+      shortBody: text.length <= 256 ? text.replace(/[\u0000-\u001f\u007f]/g, ' ') : undefined,
+    });
+    throw error;
   }
-  // Verify upstream default scope rather than silently presenting another city.
-  const flight = carrefourFlightText(text);
-  if (!flight.includes('"defaultAreaCode":"Granada - Riyadh"')) throw new Error('Carrefour default location changed');
-  return parseCarrefourResponse(flight);
 }

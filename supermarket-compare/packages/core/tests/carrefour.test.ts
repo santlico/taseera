@@ -36,3 +36,32 @@ test('Carrefour requests a normal document and validates its location',async(t)=
   const products=await searchCarrefour({term:'حليب',city:'الرياض'},new AbortController().signal);
   assert.equal(products[0].id,product.productId);
 });
+
+
+test('Carrefour logs bounded upstream diagnostics on rejected pages', async (t) => {
+  const body = '<html><body>Unexpected response</body></html>';
+  const warnings: unknown[][] = [];
+  t.mock.method(console, 'warn', (...args: unknown[]) => { warnings.push(args); });
+  t.mock.method(globalThis, 'fetch', async () => {
+    const response = new Response(body, {status: 200, headers: {'content-type': 'text/html'}});
+    Object.defineProperty(response, 'url', {value: 'https://www.carrefourksa.com/mafsau/ar/search?keyword=private'});
+    return response;
+  });
+  await assert.rejects(searchCarrefour({term: 'private', city: 'الرياض'}, new AbortController().signal));
+  assert.deepEqual(warnings, [['Carrefour upstream response rejected', {
+    status: 200, contentType: 'text/html', finalUrl: 'https://www.carrefourksa.com/mafsau/ar/search',
+    redirected: false, bodyLength: body.length, shortBody: body,
+  }]]);
+});
+
+test('Carrefour omits long response bodies from diagnostics, including HTTP errors', async (t) => {
+  const body = 'x'.repeat(257);
+  const warnings: unknown[][] = [];
+  t.mock.method(console, 'warn', (...args: unknown[]) => { warnings.push(args); });
+  t.mock.method(globalThis, 'fetch', async () => new Response(body, {status: 403}));
+  await assert.rejects(searchCarrefour({term: 'milk', city: 'الرياض'}, new AbortController().signal), /HTTP 403/);
+  const details = warnings[0][1] as {status: number; bodyLength: number; shortBody?: string};
+  assert.equal(details.status, 403);
+  assert.equal(details.bodyLength, 257);
+  assert.equal(details.shortBody, undefined);
+});
