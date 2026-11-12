@@ -8,5 +8,7 @@ import { carrefour } from './stores/carrefour/index';
 import { ninja } from './stores/ninja/index';
 import { bindawood } from './stores/bindawood/index';
 
+import { amazon } from './stores/amazon/index';
+
 // Server-only registry. Never import this package into a browser component.
-export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, lulu];
+export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, lulu];

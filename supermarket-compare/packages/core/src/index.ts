@@ -1,4 +1,4 @@
-export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood';
+export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon';
 
 export interface SearchQuery {
   term: string;
