@@ -13,6 +13,8 @@ const STORE_KEY='taseera.stores.v1', HISTORY_KEY='taseera.history.v1', SCOPE_KEY
 function SearchIcon(){return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>}
 export default function Page(){
  const [scope,setScope]=useState<SearchScope>('all'),[ready,setReady]=useState(false);
+ const [splashElapsed,setSplashElapsed]=useState(false);
+ useEffect(()=>{const timer=setTimeout(()=>setSplashElapsed(true),3000);return()=>clearTimeout(timer);},[]);
  const available=scopeStores(scope);
  const [choices,setChoices]=useState<StoreId[]>(allAvailable.map(s=>s.id));
  const selected=choices.filter(id=>available.some(s=>s.id===id));
@@ -73,7 +75,7 @@ export default function Page(){
  }
  async function share(){try{await navigator.clipboard.writeText(window.location.href);setNotice('تم نسخ الرابط. افتحه واضغط «ابحث وقارن» للحصول على أسعار جديدة.');}catch{setNotice('تقدر تنسخ رابط البحث من شريط العنوان وتشاركه.');}}
  function submit(event:FormEvent){event.preventDefault();start(term);}
- return <>{!ready&&<Splash/>}<div className="shell" aria-busy={!ready}>
+ return <>{(!ready||!splashElapsed)&&<Splash/>}<div className="shell" aria-busy={!ready||!splashElapsed} inert={!ready||!splashElapsed}>
   <a className="skip-link" href="#main">انتقل إلى البحث</a>
   <aside className="sidebar" aria-label="إعدادات المقارنة">
    <a className="brand" href="/" aria-label="تسعيرة الرئيسية"><img className="brand-wordmark" src="/brand/taseera.webp" width="1636" height="511" alt="تسعيرة" fetchPriority="high"/><small>قارن بوضوح. تسوّق بثقة.</small></a>
