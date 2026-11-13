@@ -2,7 +2,7 @@ import { sourceSearchTerm } from './product-insights';
 import { validateProducts } from './validation';
 export { productFacts, searchRelevance, comparisonWarning, normalizeText } from './product-insights';
 export type { ProductFacts } from './product-insights';
-export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon' | 'hungerstation';
+export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon' | 'hungerstation' | 'noon';
 
 export interface SearchQuery {
   term: string;
