@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import {parseLemonResponse,searchLemon} from '../../connectors/src/stores/lemon/client';
 import https from 'node:https';
 import {EventEmitter} from 'node:events';
+import {lemon} from '../../connectors/src/stores/lemon/index';
+import {searchStores} from '../src/index';
 const term='سيتافيل';
 const card=(price='59.80',href='https://lemon.sa/cetaphil-cleanser',sale='')=>`<div class="product-thumb"><div class="image"><img src="https://lemon.sa/image/cache/transparent-255x255.png" data-src="https://lemon.sa/image/cache/catalog/cetaphil.jpg"></div><div class="name"><a href="${href}">سيتافيل غسول 118 مل</a></div><input name="product_id" value="644"><div class="price"><span class="price-normal"><svg></svg>${price}</span>${sale}<span class="price-tax">السعر بدون ضريبة : 52.00</span></div></div>`;
 const page=(body=card(),q=term)=>`<div id="content"><h1>بحث - ${q}</h1><div class="main-products">${body}</div></div>`;
+test('Lemon is temporarily disabled and never contacts the source through normal app search',async(t)=>{
+ const fetch=t.mock.method(globalThis,'fetch',async()=>{throw new Error('must not run');});
+ const {results:[result]}=await searchStores({term,city:'الرياض'},[lemon]);assert.equal(result.status,'not_configured');assert.equal(fetch.mock.callCount(),0);
+});
 test('Lemon reads the current VAT-inclusive price and real lazy image, never old or VAT-exclusive price',()=>{
  const [p]=parseLemonResponse(page(card()+card()),term);assert.equal(parseLemonResponse(page(card()+card()),term).length,1);assert.equal(p.price,59.8);assert.equal(p.availability,'unknown');assert.equal(p.imageUrl,'https://lemon.sa/image/cache/catalog/cetaphil.jpg');
  assert.equal(parseLemonResponse(page(card('59.80',undefined,'<span class="price-old">59.80</span><span class="price-new">39.50</span>')),term)[0].price,39.5);

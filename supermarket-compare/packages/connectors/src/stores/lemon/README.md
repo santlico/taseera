@@ -22,3 +22,14 @@ strength/count; conservative pharmacy comparisons stay unchanged.
 Missing context/listing or invalid prices are errors. Empty results require the
 explicit visible "لا يوجد أي منتجات تطابق معايير البحث" message. Shares existing
 retry/deadline and product validation; source price and delivery confirmed there.
+
+## Deployment status
+
+Temporarily disabled in connector registry and UI catalog at the user's request.
+Live storefront parsing works locally; Vercel requests, including normal native
+HTTPS and public Arabic/SAR preferences, receive HTTP 403. Do not activate until
+an authorized runtime can retrieve the source reliably.
+
+The public autocomplete index was tested as an alternative and rejected for
+pricing: product 2474 showed 6.05 SAR there versus 6.95 SAR in the actual
+storefront. No autocomplete-price fallback was shipped.
