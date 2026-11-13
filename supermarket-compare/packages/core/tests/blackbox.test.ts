@@ -1,6 +1,7 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {blackboxGuestToken,parseBlackboxResponse,searchBlackbox} from '../../connectors/src/stores/blackbox/index';
 import {scopeStores} from '../../../apps/web/app/search-scope';
+import {stores} from '../../../apps/web/app/store-catalog';
 const guest=(storeName='ar',exp=Date.now()/1000+60)=>'e30.'+Buffer.from(JSON.stringify({storeName,exp})).toString('base64url')+'.test';
 const fixture=()=>({data:{currentPage:0,totalProducts:1,products:[{sku:'1711126210000728',name:['أبل ايفون 17 برو ماكس، 256 جيجابايت، برتقالي'],rewrite_url:'apple-iphone-17-pro-max-6.9-inche-p-1711126210000728',prices_with_tax:{price:6399,original_price:6999},after_cashback_price:'5000',blackbox_plus_price:'5900',stock:{is_in_stock:false},_media_:{image:[{image:'https://store.ops.blackbox.com.sa/media/webps/jpg/media/catalog/product/a/p/iphone.webp'}]},option_text_a_brand:['أبل']}]}});
 test('Blackbox uses public VAT-inclusive purchase price instead of cashback or membership and retains explicit stock',()=>{
@@ -16,5 +17,5 @@ test('Blackbox validates guest locale/expiry and product URLs and distinguishes 
 test('Blackbox bootstraps a fresh anonymous session and sends it only to the fixed product API with full query',async(t)=>{
  const signal=new AbortController().signal,term='ايفون 17 256';const token=guest();let count=0;
  t.mock.method(globalThis,'fetch',async(input:unknown,init?:RequestInit)=>{count++;assert.equal(init?.signal,signal);assert.equal(init?.redirect,'error');const headers=new Headers(init?.headers);assert.equal(headers.get('cookie'),null);if(count===1){assert.equal(String(input),'https://api.ops.blackbox.com.sa/api/v1/handshake');assert.equal(init?.method,'POST');assert.deepEqual(JSON.parse(String(init?.body)),{store:'ar'});assert.equal(headers.get('authorization'),null);return Response.json({token});}const url=new URL(String(input));assert.equal(url.origin,'https://api.ops.blackbox.com.sa');assert.equal(url.pathname,'/api/v1/search_rules/products/searchQuery');assert.equal(url.searchParams.get('search'),term);assert.equal(headers.get('authorization'),'Bearer '+token);return Response.json({data:{currentPage:0,totalProducts:0,products:[]}});});
- assert.deepEqual((await searchBlackbox({term,city:'الرياض'},signal)).products,[]);assert.equal(count,2);assert.ok(scopeStores('electronics').some(s=>s.id==='blackbox'));assert.ok(!scopeStores('grocery').some(s=>s.id==='blackbox'));
+ assert.deepEqual((await searchBlackbox({term,city:'الرياض'},signal)).products,[]);assert.equal(count,2);assert.equal(stores.find(s=>s.id==='blackbox')?.category,'electronics');assert.equal(scopeStores('electronics').some(s=>s.id==='blackbox'),process.env.NODE_ENV==='development');assert.ok(!scopeStores('grocery').some(s=>s.id==='blackbox'));
 });
