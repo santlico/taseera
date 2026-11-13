@@ -75,7 +75,7 @@ export default function Page(){
  return <>{!ready&&<Splash/>}<div className="shell" aria-busy={!ready}>
   <a className="skip-link" href="#main">انتقل إلى البحث</a>
   <aside className="sidebar" aria-label="إعدادات المقارنة">
-   <a className="brand" href="/" aria-label="تسعيرة الرئيسية"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M28 4H15L4 15l17 17 11-11V8Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round"/><circle cx="24" cy="11" r="2" fill="currentColor"/><path d="m12 19 4 4 8-8" stroke="currentColor" strokeWidth="2.4"/></svg><span>تسعيرة<small>قارن بوضوح. تسوّق بثقة.</small></span></a>
+   <a className="brand" href="/" aria-label="تسعيرة الرئيسية"><img className="brand-wordmark" src="/brand/taseera.webp" width="1636" height="511" alt="تسعيرة" fetchPriority="high"/><small>قارن بوضوح. تسوّق بثقة.</small></a>
    <span className="mobile-location"><span aria-hidden="true">⌖</span> الرياض <span>· ر.س</span></span>
    <div className="nav-active"><SearchIcon/>البحث والمقارنة</div>
    <div className="desktop-stores"><div className="section-label"><h2>متاجر بحثك</h2><span><bdi>{selected.length}/{available.length}</bdi></span></div><StoreChoices selected={selected} choose={choose} scope={scope}/></div>
