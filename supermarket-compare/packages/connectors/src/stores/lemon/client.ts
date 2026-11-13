@@ -40,7 +40,7 @@ export function parseLemonResponse(html:string,term:string,now=new Date()):Produ
 export async function searchLemon(query:SearchQuery,signal:AbortSignal):Promise<ConnectorSearchResult>{
   if(query.storeLocationId)throw new Error('Lemon custom delivery address not supported');
   const url=new URL('/index.php',origin);url.search=new URLSearchParams({route:'product/search',search:query.term}).toString();
-  let {response,text}=await fetchStoreDocument('lemon',url,{signal});
+  let {response,text}=await fetchStoreDocument('lemon',url,{signal,headers:{Cookie:'language=ar; currency=SAR'}});
   if(response.status===403)text=await fetchLemonDocument(url,signal);
   else if(!response.ok||new URL(response.url).origin!==origin||new URL(response.url).pathname!=='/index.php')throw new Error(`Lemon search HTTP/context ${response.status}`);
   return {products:parseLemonResponse(text,query.term),notice:'ليمون: نتائج الصفحة الأولى بسعر العبوة المعروض شامل الضريبة. التوفر والشحن غير مؤكدين دون تحديد عنوان؛ تأكد من التفاصيل لدى الصيدلية.'};
