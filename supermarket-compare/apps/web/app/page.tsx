@@ -22,6 +22,9 @@ export default function Page(){
   const requested=params.getAll('store');let ids:unknown[]=requested.length?requested:available.map(s=>s.id);
   try{const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
    if(!requested.length&&Array.isArray(saved))ids=saved;
+   // Preserve custom choices; migrate the previous explicit "all" selection.
+   if(!requested.length&&Array.isArray(saved)&&saved.length===6&&['danube','carrefour','tamimi','ninja','bindawood','amazon'].every(id=>saved.includes(id)))ids=available.map(s=>s.id);
+   if(!requested.length&&saved==='all')ids=available.map(s=>s.id);
    const recent=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
    if(Array.isArray(recent))setHistory(recent.filter(v=>typeof v==='string'&&v.length<=200).slice(0,5));
   }catch{}
@@ -37,7 +40,7 @@ export default function Page(){
   return()=>{document.body.style.overflow=previous;};
  },[picker]);
  function openPicker(){setDraftStores(selected);setPicker(true);}
- function choose(ids:StoreId[]){setSelected(ids);try{localStorage.setItem(STORE_KEY,JSON.stringify(ids));}catch{}}
+ function choose(ids:StoreId[]){setSelected(ids);try{localStorage.setItem(STORE_KEY,JSON.stringify(ids.length===available.length?'all':ids));}catch{}}
  function update(id:StoreId,result:LiveStoreResult,version:number){if(run.current===version)setSearch(old=>old?{...old,results:old.results.map(r=>r.store===id?result:r)}:old);}
  async function fetchOne(query:string,id:StoreId,version:number,signal:AbortSignal){
   try{update(id,await requestStore(query,id,signal),version);}

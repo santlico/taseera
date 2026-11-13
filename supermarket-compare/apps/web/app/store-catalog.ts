@@ -6,6 +6,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'ninja',name:'نينجا',english:'Ninja',enabled:true,scope:'سعر الموقع الافتراضي',logo:'/stores/ninja.png'},
  {id:'bindawood',name:'بن داود',english:'BinDawood',enabled:true,scope:'المرسلات، الرياض · بانوراما',logo:'/stores/bindawood.png'},
  {id:'amazon',name:'أمازون',english:'Amazon.sa',enabled:true,scope:'السعودية · البائع والتوصيل حسب المنتج',logo:'/stores/amazon.ico'},
+ {id:'hungerstation',name:'هنقرستيشن',english:'HungerStation',enabled:true,scope:'العثيم وبنده والتميمي · فروع افتراضية بالرياض',logo:'/stores/hungerstation.ico'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,scope:'قيد الربط',logo:'/stores/sadhan.png'},

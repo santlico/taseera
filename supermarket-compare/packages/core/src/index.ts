@@ -2,7 +2,7 @@ import { sourceSearchTerm } from './product-insights';
 import { validateProducts } from './validation';
 export { productFacts, searchRelevance, comparisonWarning, normalizeText } from './product-insights';
 export type { ProductFacts } from './product-insights';
-export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon';
+export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon' | 'hungerstation';
 
 export interface SearchQuery {
   term: string;
@@ -19,17 +19,24 @@ export interface Product {
   url: string;
   imageUrl?: string;
   brand?: string;
+  retailer?: string;
   size?: string;
   availability: 'in_stock' | 'out_of_stock' | 'unknown';
   location: string;
   fetchedAt: string;
 }
 
+export interface ConnectorSearchResult {
+  products: Product[];
+  notice?: string;
+  partial?: boolean;
+}
+
 export interface StoreConnector {
   id: StoreId;
   name: string;
   enabled: boolean;
-  search(query: SearchQuery, signal: AbortSignal): Promise<Product[]>;
+  search(query: SearchQuery, signal: AbortSignal): Promise<Product[] | ConnectorSearchResult>;
 }
 
 export interface StoreResult {
@@ -38,6 +45,8 @@ export interface StoreResult {
   products: Product[];
   durationMs: number;
   message?: string;
+  notice?: string;
+  partial?: boolean;
 }
 
 export interface SearchResponse {
@@ -65,8 +74,9 @@ export async function searchStores(
         timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
       });
       const rawProducts = await Promise.race([connector.search(sourceQuery, controller.signal), timeout]);
-      const products = validateProducts(rawProducts, connector.id);
-      return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start };
+      const products = validateProducts(Array.isArray(rawProducts) ? rawProducts : rawProducts.products, connector.id);
+      return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start,
+        ...(!Array.isArray(rawProducts) ? {notice: rawProducts.notice, partial: rawProducts.partial} : {}) };
     } catch (error) {
       // Keep diagnostics on the server; never expose upstream details to clients.
       console.warn('Store search failed', {
