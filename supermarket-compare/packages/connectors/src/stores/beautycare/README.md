@@ -1,0 +1,3 @@
+# Beauty Care
+Official site https://beautycare.sa/ar, verified 2026-11-13. Salla store ID345490712 discovered from public twilight initialization, logo also taken from that configuration. Uses the same public Salla product search service as Outlet: source=search, source_value=query, limit20, Arabic, currencySAR, Store-Identifier345490712. Does not use the homepage's visitor currency, sessions or analytics.
+Current numeric price with currencySAR and with_tax:true (or explicitly non-taxable), valid official /ar/.../pID link and cdn.salla.sa/dprOK product image. Explicit stock flags. First page, address unspecified. Hidden items skipped, malformed prices fail. Beauty category.

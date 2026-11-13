@@ -11,6 +11,7 @@ import { bindawood } from './stores/bindawood/index';
 import { amazon } from './stores/amazon/index';
 import { hungerstation } from './stores/hungerstation/index';
 import { noon } from './stores/noon/index';
+import { beautycare } from './stores/beautycare/index';
 import { goldenscent } from './stores/goldenscent/index';
 import { niceone } from './stores/niceone/index';
 import { outlet } from './stores/outlet/index';
@@ -25,6 +26,6 @@ import { nahdi } from './stores/nahdi/index';
 export {fetchHungerstationImage} from './stores/hungerstation/image';
 
 // Server-only registry. Never import this package into a browser component.
-export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, lulu];
+export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, beautycare, lulu];
 
 export {fetchGoldenscentImage,validGoldenscentImagePath} from './stores/goldenscent/image';
