@@ -5,6 +5,7 @@ const domains: Record<StoreId, string[]> = {
   extra: ['www.extra.com'],
   almanea: ['www.almanea.sa'],
   swsg: ['swsg.co'],
+  blackbox: ['www.blackbox.com.sa'],
   hungerstation: ['hungerstation.com'],
   noon: ['minutes.noon.com'],
   nahdi: ['www.nahdionline.com'],

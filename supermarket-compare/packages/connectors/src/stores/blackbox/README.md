@@ -1,0 +1,7 @@
+# Blackbox / الصندوق الأسود
+
+The anonymous Arabic Next storefront publishes a temporary `initialHandshake` in its home document. The public search overlay calls api.ops.blackbox.com.sa/api/v1/search_rules/products/searchQuery with that visitor handshake. Fetch a fresh public home document per search; require Arabic locale/storeName and an unexpired guest token. Send it only to the fixed product API with redirect:error. Never use an account login, user cookies, private API credentials, persistent token cache or tracked browser session. Never log the token. The API validates its signature; local decoding only checks locale and expiry.
+
+Use prices_with_tax.price as the public purchase price. Observed 2026-11-13: iPhone 17 Pro Max listing shows SAR 6399, while monthly installment is 1600. A discounted Xonda case has current price 39 vs original 119 and membership price 35. Do not subtract after_cashback_price or use blackbox_plus_price. Preserve source name and stock.is_in_stock. Match SKU to the observed /product/{rewrite_url} shopper path. Source _media_.image entries contain official store.ops.blackbox.com.sa product images, not the legacy relative Magento image path.
+
+First page, requested pageSize30 (source may return fewer). Query response must have currentPage0, totalProducts and products. Explicit zero is valid; malformed response or all-invalid offers is an error. Delivery/region selection remains with Blackbox.
