@@ -1,0 +1,4 @@
+# Outlet Pharmacy
+The official corporate site https://outletpharmacy.sa/ links its online store https://outletpharmacyonline.sa/.
+Verified 2026-11-13. Uses the same public Salla product.fetch search as the official storefront: GET https://api.salla.dev/store/v1/products with source=search, source_value=query, limit=20, Store-Identifier=1030092989, currency=SAR, Arabic language. No customer session or analytics. Store ID and API request verified from storefront initialization and public Twilight SDK 3.0.49.
+Reads current price, requires with_tax:true and currency SAR; validates store-owned product URLs and CDN prefix aeogjR. Explicit stock flags, first page only, address unspecified. Hidden products excluded; malformed prices fail rather than reporting false empty results. Listed under beauty at user request.
