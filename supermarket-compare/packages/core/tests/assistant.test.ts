@@ -62,3 +62,9 @@ test('equivalent Arabic digits in model evidence resolve back to the actual merc
  assert.equal(answer.picks[0].evidence,p.name);
  assert.equal(decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'2.4 لتر'}],question:'',refinedQuery:''},[p],input).picks[0].evidence,p.name);
 });
+
+test('assistant visitor limit allows normal repeated shopping searches while retaining the atomic cap',async(t)=>{
+ setEnv(t,'UPSTASH_REDIS_REST_URL','https://redis.example');setEnv(t,'UPSTASH_REDIS_REST_TOKEN','redis-test');setEnv(t,'OPENAI_API_KEY','openai-test');setEnv(t,'AI_VISITOR_LIMIT','');
+ let count=0;t.mock.method(globalThis,'fetch',async(_url:unknown,init?:RequestInit)=>{const command=JSON.parse(String(init?.body));assert.ok(command[1].includes('a>=tonumber(ARGV[2])'));assert.equal(command.at(-1),'10');return Response.json({result:++count<=Number(command.at(-1))?'OK':'RATE_LIMIT'});});
+ const request=new Request('https://taseera.test/api/assistant');for(let i=0;i<10;i++)await reserveUsage(request,new AbortController().signal);await assert.rejects(reserveUsage(request,new AbortController().signal),/RATE_LIMIT/);
+});
