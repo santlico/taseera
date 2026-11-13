@@ -1,7 +1,6 @@
 import type { SearchResponse, StoreId, StoreResult } from '@market/core';
 export type LiveStoreResult = Omit<StoreResult, 'status'> & {status: StoreResult['status'] | 'pending' | 'cancelled'};
-import type {SearchIntent} from './search-intent';
-export interface LiveSearch {intent?:SearchIntent;smart?:boolean;term: string; startedAt: string; results: LiveStoreResult[]}
+export interface LiveSearch {term: string; startedAt: string; results: LiveStoreResult[]}
 export async function requestStore(term: string, store: StoreId, signal: AbortSignal): Promise<StoreResult> {
   const params = new URLSearchParams({q: term, city: 'الرياض', store});
   // Avoid AbortSignal.any/timeout so older mobile browsers can still search.
@@ -22,6 +21,3 @@ export async function requestStore(term: string, store: StoreId, signal: AbortSi
     signal.removeEventListener('abort', abort);
   }
 }
-
-// Only sources that already delivered usable products participate in smart picks.
-export function assistantReadyStores(results:LiveStoreResult[]):StoreId[]{return [...new Set(results.filter(r=>r.status==='ok'&&r.products.length>0).map(r=>r.store))];}

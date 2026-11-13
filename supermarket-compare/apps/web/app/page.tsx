@@ -7,7 +7,6 @@ import {UiIcon} from './ui-icon';
 import {ShoppingCartButton} from './shopping-cart';
 import {Splash} from './splash';
 import {StoreLogo} from './store-logo';
-import {parseSearchIntent} from './search-intent';
 import {SearchResults} from './search-results';
 import {requestStore, type LiveSearch, type LiveStoreResult} from './search-client';
 const allAvailable=scopeStores('all');
@@ -20,7 +19,6 @@ export default function Page(){
  const available=scopeStores(scope);
  const [choices,setChoices]=useState<StoreId[]>(allAvailable.map(s=>s.id));
  const selected=choices.filter(id=>available.some(s=>s.id===id));
- const [smart,setSmart]=useState(false);
  const [term,setTerm]=useState(''),[search,setSearch]=useState<LiveSearch|null>(null);
  const [picker,setPicker]=useState(false),[history,setHistory]=useState<string[]>([]),[notice,setNotice]=useState('');
  const run=useRef(0),controller=useRef<AbortController|null>(null);
@@ -62,15 +60,14 @@ export default function Page(){
  }
  function start(query:string,storeIds:StoreId[]=selected,searchScope:SearchScope=scope){
   query=query.trim();if(!query||!storeIds.length)return;
-  const intent=smart?parseSearchIntent(query):null,lookup=intent?.query||query;
   if(window.matchMedia('(max-width:800px)').matches)queryInput.current?.blur();
   controller.current?.abort();controller.current=new AbortController();const version=++run.current;
   setTerm(query);setNotice('');setPicker(false);
-  setSearch({term:lookup,intent:intent||undefined,smart,startedAt:new Date().toISOString(),results:storeIds.map(store=>({store,status:'pending',products:[],durationMs:0}))});
+  setSearch({term:query,startedAt:new Date().toISOString(),results:storeIds.map(store=>({store,status:'pending',products:[],durationMs:0}))});
   const recent=[query,...history.filter(q=>q!==query)].slice(0,5);setHistory(recent);
   try{localStorage.setItem(HISTORY_KEY,JSON.stringify(recent));}catch{}
   const params=new URLSearchParams({q:query,scope:searchScope});storeIds.forEach(id=>params.append('store',id));window.history.replaceState(null,'',`/?${params}`);
-  for(const id of storeIds)void fetchOne(lookup,id,version,controller.current.signal);
+  for(const id of storeIds)void fetchOne(query,id,version,controller.current.signal);
  }
  function cancel(){controller.current?.abort();++run.current;setSearch(old=>old?{...old,results:old.results.map(r=>r.status==='pending'?{...r,status:'cancelled'}:r)}:old);setNotice('أُوقف البحث. النتائج التي وصلت ما زالت متاحة.');}
  function retry(id:StoreId){if(!search||search.results.find(r=>r.store===id)?.status==='pending')return;
@@ -94,7 +91,7 @@ export default function Page(){
     <div className="page-heading"><div><span className="eyebrow">مقارنة أسعار مشترياتك</span><h1>قبل ما تشتري،<br/><em>شوف الفرق.</em></h1><p>منتجك في أكثر من متجر. قارن السعر والحجم، واختر العرض اللي يناسبك.</p></div><span className="live-label"><span className="status-dot"/> {available.length} {available.length===1?'متجر متاح':'متاجر متاحة'} للبحث</span></div>
     <section className="search-card" data-enter aria-label="بحث المنتجات">
      <div className="scope-picker" role="group" aria-label="نوع المتاجر">{scopes.map(s=><button key={s.id} aria-pressed={scope===s.id} onClick={()=>changeScope(s.id)}><span className={`scope-icon scope-icon-${s.id}`}><UiIcon name={s.id}/></span><span className="scope-label">{s.label}</span></button>)}</div>
-     <form onSubmit={submit}><label htmlFor="query">ابحث عن منتجك</label><div className="search-line"><div className="search-input"><SearchIcon/><input ref={queryInput} id="query" name="q" type="search" value={term} onChange={e=>setTerm(e.target.value)} maxLength={200} placeholder={smart?'مثلاً: سماعات للدوام تحت 300 ريال':scope==='electronics'?'مثلاً: آيفون 17، سماعات، لابتوب':scope==='pharmacy'?'اسم المنتج، التركيز أو حجم العبوة':'مثلاً: شامبو، حليب، أو واقي شمس'} autoComplete="off" enterKeyHint="search"/></div><button className="primary search-submit" aria-label="ابحث وقارن" disabled={!term.trim()||!selected.length}><span className="search-label-long">ابحث وقارن</span><span className="search-label-short">ابحث</span><span className="search-arrow" aria-hidden="true">←</span></button></div><div className="search-meta"><span>{selected.length?'أضف النوع والحجم لنتائج أدق':'اختر متجرًا واحدًا على الأقل للبحث'}</span><span>السعر قد يختلف حسب الفرع والتوصيل</span></div><div className="smart-search-option"><label><input type="checkbox" checked={smart} onChange={e=>setSmart(e.target.checked)}/><span><strong>مختارات ذكية <span aria-hidden="true">✦</span></strong><small>نختصر لك النتائج حسب طلبك</small></span></label>{!smart&&<p>اكتب اسم المنتج، أو صف احتياجك وحدد ميزانيتك.</p>}</div></form>
+     <form onSubmit={submit}><label htmlFor="query">ابحث عن منتجك</label><div className="search-line"><div className="search-input"><SearchIcon/><input ref={queryInput} id="query" name="q" type="search" value={term} onChange={e=>setTerm(e.target.value)} maxLength={200} placeholder={scope==='electronics'?'مثلاً: آيفون 17، سماعات، لابتوب':scope==='pharmacy'?'اسم المنتج، التركيز أو حجم العبوة':'مثلاً: شامبو، حليب، أو واقي شمس'} autoComplete="off" enterKeyHint="search"/></div><button className="primary search-submit" aria-label="ابحث وقارن" disabled={!term.trim()||!selected.length}><span className="search-label-long">ابحث وقارن</span><span className="search-label-short">ابحث</span><span className="search-arrow" aria-hidden="true">←</span></button></div><div className="search-meta"><span>{selected.length?'أضف النوع والحجم لنتائج أدق':'اختر متجرًا واحدًا على الأقل للبحث'}</span><span>السعر قد يختلف حسب الفرع والتوصيل</span></div></form>
      <button className="merchant-trigger" onClick={openPicker} aria-label="تغيير متاجر البحث" aria-describedby="selected-stores-count"><span className="merchant-avatars" aria-hidden="true">{available.filter(s=>selected.includes(s.id)).slice(0,3).map(s=><StoreLogo key={s.id} src={s.logo} name={s.name}/>)}</span><span id="selected-stores-count">{selected.length?`نبحث في ${selected.length===1?(scope==='pharmacy'?'صيدلية واحدة':'مصدر واحد'):selected.length===2?(scope==='pharmacy'?'صيدليتين':'مصدرين'):`${selected.length} ${scope==='pharmacy'?'صيدليات':'مصادر'}`}`:'حدد مصادر البحث'}<small>{scope==='all'?'جميع أنواع المتاجر':scope==='pharmacy'?'منتجات الصيدليات':scope==='electronics'?'الإلكترونيات':scope==='beauty'?'العناية والجمال':'متاجر المقاضي'}</small></span><span className="merchant-change"><UiIcon name="settings"/> تحديد المتاجر <span aria-hidden="true">⌄</span></span></button>
     </section>
     {!search&&<div className="suggestions" aria-label="اقتراحات بحث"><span>جرّب</span>{(scope==='electronics'?['ايفون','سماعات','لابتوب']:scope==='pharmacy'?['سيتافيل','حليب أطفال','معجون أسنان']:scope==='beauty'?['سيتافيل','سيرافي','واقي شمس']:scope==='all'?['حليب المراعي','شامبو','معجون أسنان']:['حليب المراعي','صدور دجاج ساديا','بيبسي']).map(q=><button disabled={!selected.length} key={q} onClick={()=>start(q)}>{q}<span aria-hidden="true">↖</span></button>)}</div>}
