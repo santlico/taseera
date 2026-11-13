@@ -15,6 +15,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'innova',name:'إنوفا',english:'Innova Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · عنوان وطريقة الشحن غير محددين',logo:'/stores/innova.png'},
  {id:'lemon',name:'ليمون',english:'Lemon Pharmacy',enabled:false,category:'pharmacy',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/lemon.png'},
  {id:'daralamirat',name:'دار الأميرات',english:'Dar Al Amirat',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/daralamirat.png'},
+ {id:'knooz',name:'كنوز العناية',english:'Knooz Care',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/knooz.webp'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
