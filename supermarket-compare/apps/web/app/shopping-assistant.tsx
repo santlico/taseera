@@ -6,6 +6,7 @@ import {StoreLogo} from './store-logo';
 import {AddToShoppingCart} from './shopping-cart';
 import {productImageSrc} from './product-image';
 import type {SearchIntent} from './search-intent';
+const comparableQuery=(value:string)=>value.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632)).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace(/\s+/g,'').toLowerCase();
 export function ShoppingAssistant({term,stores,searching,onRefine,intent,automatic=false}:{term:string;stores:string[];searching:boolean;onRefine:(term:string)=>void;intent?:SearchIntent;automatic?:boolean}){
  const [busy,setBusy]=useState(false),[answer,setAnswer]=useState<(AssistantAnswer&{cached:boolean})|null>(null),[error,setError]=useState(''),[dismissed,setDismissed]=useState(false),[expanded,setExpanded]=useState(false);
  const [budget,setBudget]=useState<number|null>(intent?.budget??null);
@@ -25,7 +26,7 @@ export function ShoppingAssistant({term,stores,searching,onRefine,intent,automat
  return <section className="shopping-assistant" aria-label="مختارات لك" aria-busy={busy}>
   <div className="assistant-heading"><span className="assistant-mark" aria-hidden="true">✦</span><div><h3>مختارات لك</h3><p>حسب طلبك، من نتائج المتاجر</p></div><button className="text-button" onClick={()=>setDismissed(true)} aria-label="إخفاء المختارات">إخفاء</button></div>
   <div className="assistant-content">
-   <div className="assistant-intent" aria-label="تفاصيل طلبك"><span>{term}</span>{budget!==null&&<button onClick={()=>{request.current?.abort();request.current=null;setBusy(false);setBudget(null);setAnswer(null);setError('');started.current=false;}} aria-label="إلغاء حد الميزانية">حتى {budget.toLocaleString('ar-SA')} ر.س <b aria-hidden="true">×</b></button>}{intent&&intent.original!==term&&<small>طلبك: {intent.original}</small>}</div>
+   <div className="assistant-intent" aria-label="تفاصيل طلبك"><span>{term}</span>{budget!==null&&<button onClick={()=>{request.current?.abort();request.current=null;setBusy(false);setBudget(null);setAnswer(null);setError('');started.current=false;}} aria-label="إلغاء حد الميزانية">حتى {budget.toLocaleString('ar-SA')} ر.س <b aria-hidden="true">×</b></button>}{intent?.budget!=null&&budget===null&&<span>بدون حد للميزانية</span>}{intent&&intent.original!==term&&<small>بحثك الأصلي: {intent.original}</small>}</div>
    {busy&&<div className="assistant-working" role="status"><span className="mini-spinner"/><div><strong>نراجع الخيارات المناسبة لطلبك…</strong><p>كمل تصفح نتائج المتاجر؛ نجهّز المختارات هنا.</p></div></div>}
    {error&&<div className="assistant-error" role="status"><p>{error}</p><button onClick={()=>void submit()}>أعد المحاولة</button><span>تقدر تكمل التصفح والشراء من النتائج أدناه.</span></div>}
    {searching&&!busy&&!answer&&<p className="assistant-status" role="status">تظهر نتائج المتاجر أولًا، ثم نجهّز المختارات تلقائيًا.</p>}
@@ -34,7 +35,7 @@ export function ShoppingAssistant({term,stores,searching,onRefine,intent,automat
    {answer.picks.length>0?<div className={`assistant-choices ${expanded?'is-expanded':''}`}>{answer.picks.map(p=><AssistantChoice key={p.product.store+':'+p.product.id} pick={p}/>)}</div>:<p className="assistant-empty">ما لقينا مختارات مؤكدة لطلبك. جميع نتائج المتاجر ما زالت متاحة.</p>}
    {answer.picks.length>1&&<button className="assistant-more" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'اختصر المختارات':`عرض ${answer.picks.length-1} مختارات إضافية`} <span aria-hidden="true">{expanded?'−':'+'}</span></button>}
    {answer.question&&<p className="assistant-question">{answer.question}</p>}
-   {answer.refinedQuery&&answer.refinedQuery!==term&&answer.refinedQuery!==intent?.original&&<button className="assistant-refine" onClick={()=>onRefine(answer.refinedQuery)}>بحث أدق: <strong>{answer.refinedQuery}</strong><span aria-hidden="true">←</span></button>}
+   {answer.refinedQuery&&answer.refinedQuery!==term&&comparableQuery(answer.refinedQuery)!==comparableQuery(intent?.original||term)&&<button className="assistant-refine" onClick={()=>onRefine(answer.refinedQuery)}>بحث أدق: <strong>{answer.refinedQuery}</strong><span aria-hidden="true">←</span></button>}
    <p className="assistant-footnote">اقتراحات بمساعدة AI من عينة النتائج، وليست كل السوق. راجع المواصفات والتوفر ورسوم التوصيل لدى المتجر.</p></div>}
   </div>
  </section>;
