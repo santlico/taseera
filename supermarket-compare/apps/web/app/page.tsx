@@ -4,6 +4,7 @@ import type {StoreId} from '@market/core';
 import {stores} from './store-catalog';
 import {scopes,scopeStores,restoreSelection,type SearchScope} from './search-scope';
 import {UiIcon} from './ui-icon';
+import {ShoppingCartButton} from './shopping-cart';
 import {Splash} from './splash';
 import {StoreLogo} from './store-logo';
 import {SearchResults} from './search-results';
@@ -79,7 +80,7 @@ export default function Page(){
   <a className="skip-link" href="#main">انتقل إلى البحث</a>
   <aside className="sidebar" aria-label="إعدادات المقارنة">
    <a className="brand" href="/" aria-label="تسعيرة الرئيسية"><img className="brand-wordmark" src="/brand/taseera.webp" width="1636" height="511" alt="تسعيرة" fetchPriority="high"/><small>قارن بوضوح. تسوّق بثقة.</small></a>
-   <span className="mobile-location"><UiIcon name="location"/> الرياض <span>· ر.س</span></span>
+   <div className="header-actions"><ShoppingCartButton/><span className="mobile-location"><UiIcon name="location"/> الرياض <span>· ر.س</span></span></div>
    <div className="nav-active"><SearchIcon/>البحث والمقارنة</div>
    <div className="desktop-stores"><div className="section-label"><h2>متاجر بحثك</h2><span><bdi>{selected.length}/{available.length}</bdi></span></div><StoreChoices selected={selected} choose={choose} scope={scope}/></div>
    <div className="side-foot"><span className="status-dot"/> من مواقع المتاجر مباشرة<p>بدون تسجيل دخول.<br/>آخر بحث واختياراتك محفوظة على جهازك.</p></div>

@@ -29,3 +29,5 @@ export {fetchHungerstationImage} from './stores/hungerstation/image';
 export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, beautycare, lulu];
 
 export {fetchGoldenscentImage,validGoldenscentImagePath} from './stores/goldenscent/image';
+
+export {prepareStoreCart} from './cart-transfer';
