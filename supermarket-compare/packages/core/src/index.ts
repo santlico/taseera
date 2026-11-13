@@ -1,3 +1,4 @@
+import { sourceSearchTerm } from './product-insights';
 import { validateProducts } from './validation';
 export { productFacts, searchRelevance, comparisonWarning, normalizeText } from './product-insights';
 export type { ProductFacts } from './product-insights';
@@ -53,6 +54,7 @@ export async function searchStores(
   if (!query.term.trim() || !query.city.trim()) throw new Error('Search term and city are required');
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new Error('Invalid timeout');
   const normalized = { ...query, term: query.term.trim(), city: query.city.trim() };
+  const sourceQuery = {...normalized, term: sourceSearchTerm(normalized.term)};
   const results = await Promise.all(connectors.map(async (connector): Promise<StoreResult> => {
     if (!connector.enabled) return { store: connector.id, status: 'not_configured', products: [], durationMs: 0 };
     const start = Date.now();
@@ -62,7 +64,7 @@ export async function searchStores(
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
       });
-      const rawProducts = await Promise.race([connector.search(normalized, controller.signal), timeout]);
+      const rawProducts = await Promise.race([connector.search(sourceQuery, controller.signal), timeout]);
       const products = validateProducts(rawProducts, connector.id);
       return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start };
     } catch (error) {

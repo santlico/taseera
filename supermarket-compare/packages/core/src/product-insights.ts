@@ -23,6 +23,8 @@ function tokens(value: string): string[] {
   return text.split(' ').filter(t => t.length > 1 && !/^(من|مع|في|عبوه|عبوات|the|of|and|pack|قطع[ه]?)$/.test(t));
 }
 
+const measurementPattern = /(\d+(?:[.,]\d+)?)\s*(كيلوغرام|كيلوجرام|كيلو|كجم|كغم|kg|جرام|غرام|غم|جم|grams?|g|ملليلترات|مليلترات|مليليترات|ملليلتر|مليلتر|مليليتر|millilit(?:er|re)s?|ml|ملل|مل|ليترات|لترات|ليتر|لتر|lit(?:er|re)s?|ltr|l)(?![a-z؀-ۿ])/gi;
+
 export interface ProductFacts {
   amount?: number;
   unit?: 'kg' | 'l';
@@ -36,7 +38,7 @@ export interface ProductFacts {
 /** Conservative extraction: missing or ambiguous quantity is left unknown. */
 export function productFacts(product: Pick<Product, 'name' | 'size' | 'price'>): ProductFacts {
   const text = normalizeText((product.size || product.name).replace(/(\d),(\d)/g, '$1.$2'));
-  const pattern = /(\d+(?:[.,]\d+)?)\s*(كيلوغرام|كيلوجرام|كيلو|كجم|كغم|kg|جرام|غرام|غم|جم|grams?|g|ملليلترات|مليلترات|مليليترات|ملليلتر|مليلتر|مليليتر|millilit(?:er|re)s?|ml|ملل|مل|ليترات|لترات|ليتر|لتر|lit(?:er|re)s?|ltr|l)(?![a-z؀-ۿ])/gi;
+  const pattern = measurementPattern;
   const matches = [...text.matchAll(pattern)];
   if (!matches.length) return {};
   const quantities = matches.map(m => {
@@ -89,4 +91,18 @@ export function comparisonWarning(products: Product[]): string {
   const types = products.map(p => tokens(p.name).filter(t => /^(كاملدسم|قليلدسم|خاليدسم|بدونسكر|طازج|مجمد|المراعي|نادك|ساديا|بيبسي|كوكاكولا|رينبو|نيدو)$/.test(t)).sort().join(':'));
   if (new Set(types).size > 1) return 'العلامة أو النوع مختلفان أو غير واضحين. توافق الحجم وحده لا يعني تطابق المنتج.';
   return 'الحجم وعدد العبوات متوافقان حسب الاسم. تأكد من العلامة والنوع قبل الشراء.';
+}
+
+
+/** Search upstream by product words; quantity is verified against returned offers. */
+export function sourceSearchTerm(value: string): string {
+  if (!productFacts({name:value,price:1}).totalAmount) return value;
+  const text = value.replace(/[٠-٩۰-۹]/g, d => String('٠١٢٣٤٥٦٧٨٩'.includes(d) ? '٠١٢٣٤٥٦٧٨٩'.indexOf(d) : '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)))
+    .replace(/٫/g,'.').replace(/(\d),(\d)/g,'$1.$2');
+  const broad = text.replace(measurementPattern,' ')
+    .replace(/\d+\s*[×*x]|[×*x]\s*\d+/g,' ')
+    .replace(/(?:pack of|عبو[هة] من|عبوات من|كرتون من|عدد العبوات)\s*\d+/gi,' ')
+    .replace(/\d+\s*(?:عبو[هة]|عبوات|قطع[هة]?|حبات|bottles|cans|pieces|count|ct)/gi,' ')
+    .replace(/\s+/g,' ').trim();
+  return broad || value;
 }

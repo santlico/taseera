@@ -1,3 +1,4 @@
+import {sourceSearchTerm} from '../src/product-insights';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {productFacts, searchRelevance, comparisonWarning, type Product} from '../src/index';
@@ -32,4 +33,14 @@ test('comparison warns about quantity differences, unknown sizes, and incompatib
  assert.match(comparisonWarning([p('حليب 1 لتر'),p('حليب')]),/غير واضحة/);
  assert.match(comparisonWarning([p('حليب 1 لتر'),p('حليب بودرة 1 كجم')]),/وحدات القياس مختلفة/);
  assert.match(comparisonWarning([p('حليب 1 لتر'),p('حليب 1000 مل')]),/غير مؤكد|تأكد/);
+});
+
+
+test('source queries drop explicit quantities while keeping identity and never becoming empty',()=>{
+ assert.equal(sourceSearchTerm('حليب المراعي 1 لتر'),'حليب المراعي');
+ assert.equal(sourceSearchTerm('Pepsi 12 x 150 ml'),'Pepsi');
+ assert.equal(sourceSearchTerm('صدور دجاج ساديا ١ كيلو'),'صدور دجاج ساديا');
+ assert.equal(sourceSearchTerm('1 لتر'),'1 لتر');
+ assert.equal(sourceSearchTerm('قهوة عربية 250 غرام'),'قهوة عربية');
+ assert.equal(sourceSearchTerm('iPhone 16 128GB'),'iPhone 16 128GB');
 });

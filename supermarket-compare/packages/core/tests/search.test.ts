@@ -20,3 +20,11 @@ test('a nonresponsive connector is bounded and receives cancellation', async () 
   assert.equal(result.results[0].status, 'timeout');
   assert.equal(signal?.aborted, true);
 });
+
+
+test('search preserves original quantity intent while broadening only upstream retrieval',async()=>{
+ let term='';
+ const store:StoreConnector={id:'tamimi',name:'Tamimi',enabled:true,async search(query){term=query.term;return [];}};
+ const result=await searchStores({term:'حليب المراعي 1 لتر',city:'الرياض'},[store]);
+ assert.equal(term,'حليب المراعي');assert.equal(result.query.term,'حليب المراعي 1 لتر');
+});

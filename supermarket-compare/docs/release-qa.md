@@ -2,7 +2,7 @@
 
 ## Automated checks
 - TypeScript strict check passed.
-- 43 tests passed: all six connector mappings and network resilience, independent timeout/error isolation, API input boundaries, client cancellation/store scoping, product validation, Arabic/English quantity parsing, multipack differences, ambiguous quantities, unit comparison warnings, relevance and brands.
+- 45 tests passed: all six connector mappings and network resilience, independent timeout/error isolation, API input boundaries, client cancellation/store scoping, product validation, Arabic/English quantity parsing, multipack differences, ambiguous quantities, unit comparison warnings, relevance and brands.
 - Next.js production build passed.
 
 ## Local browser checks (real upstream products)
@@ -20,7 +20,11 @@
 - Merchant icons loaded; no client runtime errors observed in console inspection.
 
 ## Interpretation and limits
-Live quantities/prices here are observations from this test run, not permanent prices. A source may change or fail independently. The tests verify bounded behavior and known cases; they do not establish exact-product identity, address-specific stock, or every possible packaging phrase. Final hosted acceptance is performed after the GitHub-triggered Vercel deployment.
+Live quantities/prices here are observations from this test run, not permanent prices. A source may change or fail independently. The tests verify bounded behavior and known cases; they do not establish exact-product identity, address-specific stock, or every possible packaging phrase. Hosted acceptance follows the GitHub-triggered Vercel deployment, independently of these local checks.
 
 ## Operational rollback
 The previous published revision before this release was `3871a34`. A Vercel rollback to that deployment is possible if a production regression is found. Generated captures and reports are ignored and are not included in the source commit.
+
+
+## Quantity-query retrieval regression
+Hosted checking exposed that a literal query containing `1 لتر` could fail in Tamimi and miss BinDawood offers despite both sources returning milk for the base brand query. Source retrieval now removes a confidently parsed quantity, while the public response retains the original query and the UI enforces its unit, per-item amount, and pack count. Unknown quantities do not qualify as close matches to an explicitly sized query. Barcode/model-only queries and original word spelling are preserved. Local combined API verification of `حليب المراعي 1 لتر` returned successful results for all six enabled stores; dedicated regression tests cover retrieval versus comparison intent.
