@@ -16,3 +16,5 @@ test('Outlet uses its public store-specific search without sessions and belongs 
  assert.equal((await searchOutlet({term:'سيتافيل',city:'الرياض'},new AbortController().signal)).products.length,1);
  assert.ok(scopeStores('beauty').some(s=>s.id==='outlet'));
 });
+
+test('Outlet accepts explicitly non-taxable shampoo at its displayed price without applying VAT',()=>{const [offer]=parseOutletResponse(data([{...p,name:'فافو شامبو',price:26.5,with_tax:false,is_taxable:false}]));assert.equal(offer.price,26.5);assert.throws(()=>parseOutletResponse(data([{...p,with_tax:false,is_taxable:true}])));});

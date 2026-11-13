@@ -7,7 +7,7 @@ export function parseOutletResponse(data:unknown):Product[]{
  for(const p of d.data){
   if(p.status!=='sale')continue;
   const id=String(p.id),price=p.price;
-  if(!/^\d+$/.test(id)||typeof p.name!=='string'||!p.name.trim()||p.currency!=='SAR'||p.with_tax!==true||typeof price!=='number'||!Number.isFinite(price)||price<=0||p.is_dynamic_pricing===true)throw new Error('Outlet product price/context invalid');
+  if(!/^\d+$/.test(id)||typeof p.name!=='string'||!p.name.trim()||p.currency!=='SAR'||!(p.with_tax===true||(p.with_tax===false&&p.is_taxable===false))||typeof price!=='number'||!Number.isFinite(price)||price<=0||p.is_dynamic_pricing===true)throw new Error('Outlet product price/context invalid');
   let url:URL;try{url=new URL(p.url);}catch{throw new Error('Outlet product URL invalid');}
   if(url.origin!=='https://outletpharmacyonline.sa'||url.username||url.password||!url.pathname.startsWith('/ar/')||!url.pathname.endsWith(`/p${id}`))throw new Error('Outlet product URL mismatch');
   let imageUrl:string|undefined;try{const u=new URL(p.image?.url||p.original_image);if(u.origin==='https://cdn.salla.sa'&&u.pathname.startsWith('/aeogjR/')&&!u.username&&!u.password)imageUrl=u.href;}catch{}
@@ -22,5 +22,5 @@ export async function searchOutlet(query:SearchQuery,signal:AbortSignal):Promise
  const url=new URL('https://api.salla.dev/store/v1/products');url.search=new URLSearchParams({source:'search',source_value:query.term,limit:'20'}).toString();
  const {response,text}=await fetchStoreDocument('outlet',url,{signal,headers:{Accept:'application/json','Store-Identifier':'1030092989',currency:'SAR','Accept-Language':'ar'}});
  if(!response.ok)throw new Error(`Outlet search HTTP ${response.status}`);
- return {products:parseOutletResponse(JSON.parse(text)),notice:'صيدلية أوتلت: أول صفحة من كتالوج المتجر السعودي، بالسعر الحالي شامل الضريبة. تأكد من العبوة والسعر والتوفر والشحن النهائي لدى المتجر.'};
+ return {products:parseOutletResponse(JSON.parse(text)),notice:'صيدلية أوتلت: أول صفحة من كتالوج المتجر السعودي، بالسعر الحالي المعروض؛ بعض المنتجات غير خاضعة للضريبة حسب المصدر. تأكد من العبوة والسعر والتوفر والشحن النهائي لدى المتجر.'};
 }
