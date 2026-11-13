@@ -17,6 +17,7 @@ export async function POST(request:Request){
   try{await writeCache(key,answer,signal);}catch{/* A completed answer is still usable if cache write fails. */}
   return Response.json({...answer,cached:false},{headers});
  }catch(error){const code=error instanceof Error?error.message:'';const status=code==='INVALID_INPUT'?400:code==='RATE_LIMIT'||code==='DAILY_LIMIT'?429:503;
+  console.warn('Assistant request failed',{code:['INVALID_INPUT','RATE_LIMIT','DAILY_LIMIT','SOURCES_UNAVAILABLE','AI_STORAGE_UNAVAILABLE','AI_UNAVAILABLE','AI_INVALID_OUTPUT'].includes(code)?code:'UNEXPECTED_FAILURE'});
   const message=code==='INVALID_INPUT'?'راجع عبارة البحث والميزانية والمتاجر المحددة.':code==='RATE_LIMIT'?'استخدمت المساعد عدة مرات. حاول بعد خمس دقائق.':code==='DAILY_LIMIT'?'وصل المساعد لحد الاستخدام اليومي. تقدر تكمل البحث والمقارنة.':code==='SOURCES_UNAVAILABLE'?'تعذّر تحديث نتائج المتاجر. حاول لاحقًا؛ نتائج بحثك الحالية ما زالت متاحة.':'تعذّر تجهيز الاقتراحات الآن. نتائج البحث والمقارنة ما زالت متاحة.';
   return Response.json({error:message},{status,headers});
  }
