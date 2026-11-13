@@ -14,7 +14,8 @@ test('assistant validates bounded input, excludes unavailable and over-budget of
 test('assistant resolves model choices to server products; invented IDs and false budget claims are rejected; evidence always comes from the merchant',()=>{
  const p=product();const result=decodeAdvice({...advice,picks:[{...advice.picks[0],price:1,url:'https://evil.example'}]},[p],input);assert.equal(result.picks[0].product.price,100);assert.equal(result.picks[0].product.url,p.url);
  for(const bad of [{...advice,picks:[{...advice.picks[0],key:'p99'}]},{...advice,picks:[advice.picks[0],advice.picks[0]]},{...advice,question:'https://evil.example'}])assert.throws(()=>decodeAdvice(bad,[p],input));
- assert.throws(()=>decodeAdvice(advice,[p],{...input,budget:null}));
+ assert.ok(!decodeAdvice(advice,[p],{...input,budget:null}).picks[0].reason.includes('ميزانيتك'));
+ assert.throws(()=>decodeAdvice(advice,[p],{...input,budget:50}));
 });
 test('assistant calls Responses with strict candidate IDs, bounded output and store:false, never trusting generated prices',async(t)=>{
  setEnv(t,'OPENAI_API_KEY','test-only-secret');let called=0;

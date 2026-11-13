@@ -20,8 +20,8 @@ export function decodeAdvice(data:any,products:Product[],input:AssistantInput){
   if(typeof pick.key!=='string'||!/^p\d+$/.test(pick.key)||seen.has(pick.key))throw Error('AI_INVALID_OUTPUT');seen.add(pick.key);
   const product=products[Number(pick.key.slice(1))],evidence=text(pick.evidence,100);
   if(!product||!['match','budget','compare'].includes(pick.reason)||evidence===null)throw Error('AI_INVALID_OUTPUT');
-  if(pick.reason==='budget'&&(input.budget===null||product.price>input.budget))throw Error('AI_INVALID_OUTPUT');
-  return {product,evidence:evidence&&product.name.includes(evidence)?evidence:product.name,reason:pick.reason==='budget'?'ضمن ميزانيتك المحددة.':pick.reason==='match'?'خيار مقترح حسب بحثك واحتياجك.':'خيار يستحق مقارنة التفاصيل.',check:['nahdi','aldawaa','united','whites','innova'].includes(product.store)?'راجع التركيز والشكل وعدد الوحدات؛ هذا اقتراح تسوّق وليس توصية علاجية.':'راجع تطابق النوع والموديل والحجم والضمان والتوفر قبل الشراء.'};
+  if(input.budget!==null&&product.price>input.budget)throw Error('AI_INVALID_OUTPUT');
+  return {product,evidence:evidence&&product.name.includes(evidence)?evidence:product.name,reason:pick.reason==='budget'&&input.budget!==null?'ضمن ميزانيتك المحددة.':pick.reason==='match'?'خيار مقترح حسب بحثك واحتياجك.':'خيار يستحق مقارنة التفاصيل.',check:['nahdi','aldawaa','united','whites','innova'].includes(product.store)?'راجع التركيز والشكل وعدد الوحدات؛ هذا اقتراح تسوّق وليس توصية علاجية.':'راجع تطابق النوع والموديل والحجم والضمان والتوفر قبل الشراء.'};
  });
  return {picks,question:data.question.trim(),refinedQuery:data.refinedQuery.trim()};
 }
