@@ -21,6 +21,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'outlet',name:'صيدلية أوتلت',english:'Outlet Pharmacy',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/outlet.webp'},
  {id:'knooz',name:'كنوز العناية',english:'Knooz Care',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/knooz.webp'},
  {id:'jarir',name:'جرير',english:'Jarir',enabled:true,category:'electronics',scope:'السعودية · السعر شامل الضريبة والتوفر حسب العنوان',logo:'/stores/jarir.svg'},
+ {id:'extra',name:'إكسترا',english:'eXtra',enabled:true,category:'electronics',scope:'السعودية · الرياض افتراضيًا، عروض المتجر وشركائه',logo:'/stores/extra.svg'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
