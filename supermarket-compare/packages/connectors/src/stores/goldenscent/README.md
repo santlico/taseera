@@ -1,0 +1,4 @@
+# Golden Scent
+Official Saudi search: https://www.goldenscent.com/search?q=ديور&___store=ar_sa (verified 2026-11-13).
+Public Arabic SSR HTML, canonical query + language validated. Reads ItemList Product offers with SAR, verifies image/name and visible current price against product cards, uses real /p/ links. Excludes struck prices. Resolves observed React $RS streamed HTML insertions without evaluating scripts. Bounded 5MiB ordinary HTTPS request, caller cancellation, IPv4 to avoid observed IPv6 connect timeout, one transient retry. HTTP denials remain errors.
+First 20 source offers, Saudi default catalog without address; stock from explicit schema. Parent products may have size/variant-dependent prices; size absent in listing remains unknown and user must verify on product page. No automatic equivalence or savings claim. Unknown query has explicit no-products body and returns [].
