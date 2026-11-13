@@ -14,15 +14,14 @@ export function shortlist(products:Product[],input:AssistantInput){
  return [...fair,...unique.filter(p=>!fair.includes(p))].slice(0,60);
 }
 const text=(value:unknown,max:number)=>typeof value==='string'&&value.length<=max&&!/[\u0000-\u001f]|https?:\/\//.test(value)?value.trim():null;
-const normalizeEvidence=(value:string)=>value.normalize('NFKC').replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632)).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace(/٫/g,'.').replace(/\s+/g,'').toLowerCase();
 export function decodeAdvice(data:any,products:Product[],input:AssistantInput){
  if(!data||!Array.isArray(data.picks)||data.picks.length>(input.compare?4:3)||text(data.question,180)===null||text(data.refinedQuery,120)===null)throw Error('AI_INVALID_OUTPUT');
  const seen=new Set<string>();const picks:AssistantPick[]=data.picks.map((pick:any)=>{
   if(typeof pick.key!=='string'||!/^p\d+$/.test(pick.key)||seen.has(pick.key))throw Error('AI_INVALID_OUTPUT');seen.add(pick.key);
   const product=products[Number(pick.key.slice(1))],evidence=text(pick.evidence,100);
-  if(!product||!['match','budget','compare'].includes(pick.reason)||!evidence||!normalizeEvidence(product.name).includes(normalizeEvidence(evidence)))throw Error('AI_INVALID_OUTPUT');
+  if(!product||!['match','budget','compare'].includes(pick.reason)||evidence===null)throw Error('AI_INVALID_OUTPUT');
   if(pick.reason==='budget'&&(input.budget===null||product.price>input.budget))throw Error('AI_INVALID_OUTPUT');
-  return {product,evidence:product.name.includes(evidence)?evidence:product.name,reason:pick.reason==='budget'?'ضمن ميزانيتك المحددة.':pick.reason==='match'?'خيار مقترح حسب بحثك واحتياجك.':'خيار يستحق مقارنة التفاصيل.',check:['nahdi','aldawaa','united','whites','innova'].includes(product.store)?'راجع التركيز والشكل وعدد الوحدات؛ هذا اقتراح تسوّق وليس توصية علاجية.':'راجع تطابق النوع والموديل والحجم والضمان والتوفر قبل الشراء.'};
+  return {product,evidence:evidence&&product.name.includes(evidence)?evidence:product.name,reason:pick.reason==='budget'?'ضمن ميزانيتك المحددة.':pick.reason==='match'?'خيار مقترح حسب بحثك واحتياجك.':'خيار يستحق مقارنة التفاصيل.',check:['nahdi','aldawaa','united','whites','innova'].includes(product.store)?'راجع التركيز والشكل وعدد الوحدات؛ هذا اقتراح تسوّق وليس توصية علاجية.':'راجع تطابق النوع والموديل والحجم والضمان والتوفر قبل الشراء.'};
  });
  return {picks,question:data.question.trim(),refinedQuery:data.refinedQuery.trim()};
 }

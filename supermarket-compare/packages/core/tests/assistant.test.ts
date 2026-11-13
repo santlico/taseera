@@ -11,9 +11,9 @@ test('assistant validates bounded input, excludes unavailable and over-budget of
  assert.equal(validateInput(input).term,'شامبو');for(const invalid of [{...input,stores:['unknown']},{...input,budget:-1},{...input,note:'x'.repeat(241)},{...input,term:''},{...input,stores:[]}])assert.throws(()=>validateInput(invalid));
  const all=[...Array.from({length:80},(_,i)=>product(String(i))),product('other','jarir',120),{...product('missing'),availability:'out_of_stock' as const},product('expensive','extra',1000)];const list=shortlist(all,input);assert.equal(list.length,60);assert.ok(list.some(p=>p.store==='jarir'));assert.ok(!list.some(p=>p.id==='missing'||p.id==='expensive'));
 });
-test('assistant resolves model choices to server products; invented IDs, evidence and false budget claims are rejected',()=>{
+test('assistant resolves model choices to server products; invented IDs and false budget claims are rejected; evidence always comes from the merchant',()=>{
  const p=product();const result=decodeAdvice({...advice,picks:[{...advice.picks[0],price:1,url:'https://evil.example'}]},[p],input);assert.equal(result.picks[0].product.price,100);assert.equal(result.picks[0].product.url,p.url);
- for(const bad of [{...advice,picks:[{...advice.picks[0],key:'p99'}]},{...advice,picks:[{...advice.picks[0],evidence:'مضاد للحساسية'}]},{...advice,picks:[advice.picks[0],advice.picks[0]]},{...advice,question:'https://evil.example'}])assert.throws(()=>decodeAdvice(bad,[p],input));
+ for(const bad of [{...advice,picks:[{...advice.picks[0],key:'p99'}]},{...advice,picks:[advice.picks[0],advice.picks[0]]},{...advice,question:'https://evil.example'}])assert.throws(()=>decodeAdvice(bad,[p],input));
  assert.throws(()=>decodeAdvice(advice,[p],{...input,budget:null}));
 });
 test('assistant calls Responses with strict candidate IDs, bounded output and store:false, never trusting generated prices',async(t)=>{
@@ -59,5 +59,5 @@ test('equivalent Arabic digits in model evidence resolve back to the actual merc
  const p={...product(),name:'حليب المراعي ١.٤ لتر'};
  const answer=decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'1.4 لتر'}],question:'',refinedQuery:''},[p],input);
  assert.equal(answer.picks[0].evidence,p.name);
- assert.throws(()=>decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'2.4 لتر'}],question:'',refinedQuery:''},[p],input));
+ assert.equal(decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'2.4 لتر'}],question:'',refinedQuery:''},[p],input).picks[0].evidence,p.name);
 });
