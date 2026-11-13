@@ -15,7 +15,7 @@ export function ShoppingAssistant({term,stores,searching,onRefine,intent,automat
  const submit=useCallback(async()=>{
   if(request.current)return;
   const c=new AbortController();request.current=c;const timer=setTimeout(()=>c.abort(),45000);setBusy(true);setError('');setAnswer(null);
-  try{const r=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({term,stores:storeKey.split(','),note:intent?.need||term,budget}),signal:c.signal});const d=await r.json();if(!r.ok)throw Error(typeof d.error==='string'?d.error:'تعذّر تجهيز المختارات.');if(!Array.isArray(d.picks)||d.picks.length>3)throw Error('تعذّر تجهيز المختارات.');if(mounted.current&&!c.signal.aborted)setAnswer(d);}
+  try{const r=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({term,stores:storeKey.split(','),note:budget===null&&intent?.budget!=null?term:intent?.need||term,budget}),signal:c.signal});const d=await r.json();if(!r.ok)throw Error(typeof d.error==='string'?d.error:'تعذّر تجهيز المختارات.');if(!Array.isArray(d.picks)||d.picks.length>3)throw Error('تعذّر تجهيز المختارات.');if(mounted.current&&!c.signal.aborted)setAnswer(d);}
   catch(e){if(request.current!==c)return;if(mounted.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'تعذّر تجهيز المختارات.');else if(mounted.current)setError('أخذت المختارات وقتًا أطول من المعتاد. نتائج المتاجر متاحة تحت.');}
   finally{clearTimeout(timer);if(request.current===c){request.current=null;if(mounted.current)setBusy(false);}}
  },[term,storeKey,intent?.need,budget]);
