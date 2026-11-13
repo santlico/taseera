@@ -4,6 +4,7 @@ import {comparisonWarning,productFacts,searchRelevance,type Product,type StoreId
 import {storeInfo} from './store-catalog';
 import {AddToShoppingCart} from './shopping-cart';
 import {useRecommendations,RecommendationButton,RecommendationDialog,recommendationKey} from './recommendations';
+import {ShoppingAssistant} from './shopping-assistant';
 import {UiIcon} from './ui-icon';
 import {StoreLogo} from './store-logo';
 import {productImageSrc} from './product-image';
@@ -14,7 +15,7 @@ const keyOf=(p:Product)=>`${p.store}:${p.id}`;
 const time=(value:string)=>new Date(value).toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Riyadh'});
 const stock=(p:Product)=>p.availability==='in_stock'?'متوفر':p.availability==='out_of_stock'?'غير متوفر':'التوفر غير مؤكد';
 
-export function SearchResults({search,onRetry,onCancel,onShare,loading}:{search:LiveSearch;onRetry:(id:StoreId)=>void;onCancel:()=>void;onShare:()=>void;loading:boolean}){
+export function SearchResults({search,onRetry,onCancel,onShare,onRefine,loading}:{search:LiveSearch;onRetry:(id:StoreId)=>void;onCancel:()=>void;onShare:()=>void;onRefine:(term:string)=>void;loading:boolean}){
  const [tab,setTab]=useState<StoreId|'all'>('all'),[sort,setSort]=useState('relevance'),[stockOnly,setStockOnly]=useState(false),[nearOnly,setNearOnly]=useState(false);
  const [communityOnly,setCommunityOnly]=useState(false),[recommending,setRecommending]=useState<Product|null>(null);
  const [limit,setLimit]=useState(24),[chosen,setChosen]=useState<Product[]>([]),[compare,setCompare]=useState(false);
@@ -43,6 +44,7 @@ export function SearchResults({search,onRetry,onCancel,onShare,loading}:{search:
  return <section className={`results ${chosen.length?'has-comparison':''}`} aria-label="نتائج البحث" data-search-state={loading?'loading':'complete'}>
   <div className="result-title"><div><h2>نتائج «{search.term}»</h2><span>بدأ البحث {time(search.startedAt)} · توقيت الرياض</span></div><div className="result-actions">{loading?<button className="text-button" onClick={onCancel}>إيقاف البحث</button>:<button className="secondary" onClick={onShare}>مشاركة البحث ↗</button>}</div></div>
   <div className={`search-progress ${loading?'is-loading':''}`} aria-live="polite"><span>{loading?<><span className="mini-spinner"/> وصلت نتائج {success} من {search.results.length} متاجر؛ نكمل البحث…</>:<>{cancelled?'أُوقف البحث':'انتهى البحث'} · {success} من {search.results.length} متاجر استجابت</>}</span><span>{near} نتيجة أقرب لبحثك <small>من {entries.length} نتائج المتاجر</small></span></div>
+  <ShoppingAssistant term={search.term} stores={search.results.map(r=>r.store)} searching={loading} onRefine={onRefine}/>
   <details className="health-details"><summary>حالة المتاجر <span>{success} من {search.results.length} استجابت</span>{failed.length+partial.length>0&&<span className="health-warning">{failed.length+partial.length} لم تكتمل</span>}</summary><div className="store-health" aria-label="حالة البحث في كل متجر">{search.results.map(r=>{const s=storeInfo(r.store);return <div className={`health-item ${r.status}`} key={r.store}><StoreLogo src={s.logo} name={s.name}/><div><strong>{s.name}</strong><span>{r.status==='pending'?'جارٍ البحث…':r.status==='ok'?`${r.products.length} نتيجة${r.partial?' · تغطية جزئية':' من المصدر'}`:r.status==='cancelled'?'أُوقف البحث':r.status==='timeout'?'انتهت المهلة':'تعذّر الاتصال'}</span></div>{r.status==='pending'?<span className="mini-spinner"/>:r.status!=='ok'||r.partial?<button aria-label={`إعادة البحث في ${s.name}`} onClick={()=>onRetry(r.store)}>أعد المحاولة</button>:<span className="health-check" aria-label="نجح البحث">✓</span>}</div>})}</div></details>
   {!loading&&failed.length>0&&<div className="partial-notice"><span>لم يكتمل البحث في {failed.length} من المتاجر.{success?' بقية النتائج متاحة.':''}</span><button className="text-button" onClick={()=>failed.forEach(r=>onRetry(r.store))}>أعد المحاولة ({failed.length})</button></div>}
 

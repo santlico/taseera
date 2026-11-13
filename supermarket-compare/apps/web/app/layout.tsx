@@ -4,6 +4,7 @@ import './globals.css';
 import './redesign.css';
 import './shopping-cart.css';
 import './recommendations.css';
+import './shopping-assistant.css';
 import {ShoppingCartProvider} from './shopping-cart';
 export const viewport: Viewport = {width:'device-width',initialScale:1,viewportFit:'cover',themeColor:'#f4f7fc'};
 export const metadata = { title: 'تسعيرة | قارن أسعار مشترياتك', description:'قارن أسعار المقاضي والإلكترونيات والعناية والجمال ومنتجات الصيدليات، في بحث واحد. نفس احتياجك، خيارات أكثر، قرار أوضح.' };
