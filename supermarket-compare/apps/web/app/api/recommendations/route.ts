@@ -3,7 +3,10 @@ export const runtime='nodejs';
 const headers={'Cache-Control':'private, no-store','Vary':'Cookie'};
 export async function GET(){const config=recommendationConfig();return Response.json({available:!!config,local:!!config&&'local' in config,version},{headers});}
 export async function POST(request:Request){
- if(request.headers.get('origin')!==new URL(request.url).origin)return Response.json({error:'INVALID_ORIGIN'},{status:403,headers});
+ // Next can normalize 127.0.0.1 to localhost internally; compare the browser's
+ // origin with the incoming Host, not that internal URL. A browser cannot forge Host.
+ const expected=new URL(request.url),host=request.headers.get('host');if(host)expected.host=host;
+ if(request.headers.get('origin')!==expected.origin)return Response.json({error:'INVALID_ORIGIN'},{status:403,headers});
  const config=recommendationConfig();if(!config)return Response.json({available:false,version,error:'UNAVAILABLE'},{status:503,headers});
  const user=visitor(request,config.token);const responseHeaders={...headers,...(user.cookie?{'Set-Cookie':user.cookie}:{})};
  try{

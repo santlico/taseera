@@ -43,6 +43,8 @@ test('local preview records real votes only in development and cannot replace pr
  for(const name of ['UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN','KV_REST_API_URL','KV_REST_API_TOKEN','VERCEL'])setEnv(t,name,'');setEnv(t,'NODE_ENV','development');
  const request=(body:unknown,cookie?:string)=>new Request('http://localhost:3000/api/recommendations',{method:'POST',headers:{origin:'http://localhost:3000',...(cookie?{cookie}:{})},body:JSON.stringify(body)});
  const product={store:'danube',id:'local-preview-test'};
+ const alias=await POST(new Request('http://localhost:3000/api/recommendations',{method:'POST',headers:{host:'127.0.0.1:3000',origin:'http://127.0.0.1:3000'},body:JSON.stringify({action:'query',products:[product]})}));assert.equal(alias.status,200);
+ const forgedOrigin=await POST(new Request('http://localhost:3000/api/recommendations',{method:'POST',headers:{host:'127.0.0.1:3000',origin:'https://evil.example'},body:'{}'}));assert.equal(forgedOrigin.status,403);
  const first=await POST(request({action:'vote',product,reason:'tried'}));const cookie=first.headers.get('set-cookie')!.split(';')[0];assert.equal((await first.json()).local,true);
  const repeat=await POST(request({action:'vote',product,reason:'tried'},cookie));assert.equal((await repeat.json()).vote.total,1);
  const second=await POST(request({action:'query',products:[product]}));const other=await second.json();assert.equal(other.votes['danube:local-preview-test'].total,1);assert.equal(other.votes['danube:local-preview-test'].mine,null);
