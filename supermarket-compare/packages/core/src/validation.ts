@@ -10,6 +10,7 @@ const domains: Record<StoreId, string[]> = {
   innova: ['innovapharmacy.com'],
   lemon: ['lemon.sa'],
   daralamirat: ['daralamirat.com.sa'],
+  niceone: ['niceonesa.com'],
   outlet: ['outletpharmacyonline.sa'],
   knooz: ['knooz-store.com'],
   danube: ['www.danube.sa', 'danube.sa'], bindawood: ['www.bindawood.sa', 'bindawood.sa'],
