@@ -1,6 +1,7 @@
 import type { SearchResponse, StoreId, StoreResult } from '@market/core';
 export type LiveStoreResult = Omit<StoreResult, 'status'> & {status: StoreResult['status'] | 'pending' | 'cancelled'};
-export interface LiveSearch {term: string; startedAt: string; results: LiveStoreResult[]}
+import type {SearchIntent} from './search-intent';
+export interface LiveSearch {intent?:SearchIntent;smart?:boolean;term: string; startedAt: string; results: LiveStoreResult[]}
 export async function requestStore(term: string, store: StoreId, signal: AbortSignal): Promise<StoreResult> {
   const params = new URLSearchParams({q: term, city: 'الرياض', store});
   // Avoid AbortSignal.any/timeout so older mobile browsers can still search.

@@ -1,23 +1,41 @@
 'use client';
-import {useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import type {AssistantAnswer,AssistantPick} from './api/assistant/engine';
 import {storeInfo} from './store-catalog';
 import {StoreLogo} from './store-logo';
 import {AddToShoppingCart} from './shopping-cart';
 import {productImageSrc} from './product-image';
-export function ShoppingAssistant({term,stores,searching,onRefine}:{term:string;stores:string[];searching:boolean;onRefine:(term:string)=>void}){
- const [open,setOpen]=useState(false),[note,setNote]=useState(''),[budget,setBudget]=useState(''),[busy,setBusy]=useState(false),[available,setAvailable]=useState<boolean|null>(null),[answer,setAnswer]=useState<(AssistantAnswer&{cached:boolean})|null>(null),[error,setError]=useState('');
- const request=useRef<AbortController|null>(null);
- useEffect(()=>{const c=new AbortController();fetch('/api/assistant',{signal:c.signal,cache:'no-store'}).then(r=>r.json()).then(d=>setAvailable(d.available===true)).catch(()=>{if(!c.signal.aborted)setAvailable(false);});return()=>{c.abort();request.current?.abort();};},[]);
- async function submit(event:React.FormEvent){
-  event.preventDefault();if(busy)return;
-  const normalized=budget.replace(/[٠-٩]/g,c=>String(c.charCodeAt(0)-1632)).replace(/[۰-۹]/g,c=>String(c.charCodeAt(0)-1776)).replace('٫','.');
-  const amount=normalized.trim()?Number(normalized):null;if(amount!==null&&(!Number.isFinite(amount)||amount<=0||amount>1000000)){setError('اكتب ميزانية صحيحة بالريال، أو اتركها فارغة.');return;}
-  request.current?.abort();const c=new AbortController();request.current=c;const timer=setTimeout(()=>c.abort(),45000);setBusy(true);setError('');setAnswer(null);
-  try{const r=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({term,stores,note,budget:amount}),signal:c.signal});const d=await r.json();if(!r.ok)throw Error(typeof d.error==='string'?d.error:'تعذّر تجهيز الاقتراحات.');if(!Array.isArray(d.picks)||d.picks.length>3)throw Error('تعذّر تجهيز الاقتراحات.');setAnswer(d);}
-  catch(e){if(request.current===c)setError(e instanceof Error&&e.name!=='AbortError'?e.message:'انتهت المهلة. تقدر تعيد المحاولة أو تكمل البحث.');}finally{clearTimeout(timer);if(request.current===c)setBusy(false);}
- }
- return <section className="shopping-assistant" aria-label="مساعد تسعيرة"><button className="assistant-trigger" aria-expanded={open} aria-controls="assistant-content" onClick={()=>setOpen(v=>!v)}><span className="assistant-mark" aria-hidden="true">✦</span><span><strong>ساعدني أختار</strong><small>خيارات أقل، أقرب لاحتياجك</small></span><span className="assistant-toggle" aria-hidden="true">{open?'−':'+'}</span></button>{open&&<div id="assistant-content" className="assistant-content"><p>وش يهمك في «{term}»؟ نراجع بيانات المتاجر ونقترح حتى 3 خيارات.</p><form onSubmit={submit}><label htmlFor="assistant-need">احتياجك <small>اختياري</small></label><textarea id="assistant-need" value={note} onChange={e=>setNote(e.target.value)} maxLength={240} rows={2} placeholder="مثلاً: نفس الماركة والحجم، أو موديل بسعة محددة" disabled={busy}/><label htmlFor="assistant-budget">أقصى ميزانية للمنتج <small>اختياري</small></label><div className="assistant-budget"><input id="assistant-budget" value={budget} onChange={e=>setBudget(e.target.value)} inputMode="decimal" maxLength={12} placeholder="بدون حد" disabled={busy}/><span>ر.س</span></div><p className="assistant-privacy">عند الطلب نرسل عبارة البحث واحتياجك وبيانات المنتجات إلى OpenAI. لا تكتب معلومات شخصية أو صحية خاصة.</p>{available===false&&<p className="assistant-status" role="status">المساعد قيد التجهيز حاليًا. البحث والمقارنة يعملان كالمعتاد.</p>}<button className="primary assistant-submit" disabled={busy||searching||available!==true}>{busy?'نراجع الخيارات ونجهّز اقتراحاتك…':searching?'ننتظر اكتمال نتائج المتاجر…':'اقترح لي خيارات مناسبة'}<span aria-hidden="true">{busy?'◌':'←'}</span></button></form>{error&&<p className="assistant-error" role="alert">{error}</p>}{busy&&<p className="assistant-status" role="status">نحدّث بيانات المتاجر قبل الاختيار. تقدر تكمل تصفح النتائج أثناء الانتظار.</p>}{answer&&<div className="assistant-answer" aria-live="polite"><div className="assistant-answer-heading"><h3>{answer.picks.length?'خيارات تستحق المقارنة':'نحتاج نحدد البحث أكثر'}</h3><span>{answer.ai?'بمساعدة AI':'حسب نتائج المتاجر'}</span></div><p className="assistant-coverage">راجعنا {answer.scanned} منتجًا من {answer.responded} من {answer.requested} متاجر، ورشّحنا {answer.considered} خيارًا للتحليل.{answer.cached?' اقتراحات محفوظة لبضع دقائق.':''}</p>{answer.picks.map(p=><AssistantChoice key={p.product.store+':'+p.product.id} pick={p}/>)}{answer.question&&<p className="assistant-question">{answer.question}</p>}{answer.refinedQuery&&answer.refinedQuery!==term&&<button className="assistant-refine" onClick={()=>onRefine(answer.refinedQuery)}>جرّب البحث عن <strong>{answer.refinedQuery}</strong><span aria-hidden="true">←</span></button>}<p className="assistant-footnote">اقتراحات من عينة النتائج المتاحة، وقد تخطئ في فهم احتياجك. الأسعار من المتاجر وليست مولّدة؛ راجع تطابق التفاصيل ورسوم التوصيل لدى المتجر.</p></div>}</div>}</section>;
+import type {SearchIntent} from './search-intent';
+export function ShoppingAssistant({term,stores,searching,onRefine,intent,automatic=false}:{term:string;stores:string[];searching:boolean;onRefine:(term:string)=>void;intent?:SearchIntent;automatic?:boolean}){
+ const [busy,setBusy]=useState(false),[answer,setAnswer]=useState<(AssistantAnswer&{cached:boolean})|null>(null),[error,setError]=useState(''),[dismissed,setDismissed]=useState(false);
+ const [budget,setBudget]=useState<number|null>(intent?.budget??null);
+ const request=useRef<AbortController|null>(null),started=useRef(false),mounted=useRef(true);
+ const storeKey=stores.slice().sort().join(',');
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;request.current?.abort();request.current=null;started.current=false;};},[]);
+ const submit=useCallback(async()=>{
+  if(request.current)return;
+  const c=new AbortController();request.current=c;const timer=setTimeout(()=>c.abort(),45000);setBusy(true);setError('');setAnswer(null);
+  try{const r=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({term,stores:storeKey.split(','),note:intent?.need||term,budget}),signal:c.signal});const d=await r.json();if(!r.ok)throw Error(typeof d.error==='string'?d.error:'تعذّر تجهيز المختارات.');if(!Array.isArray(d.picks)||d.picks.length>3)throw Error('تعذّر تجهيز المختارات.');if(mounted.current&&!c.signal.aborted)setAnswer(d);}
+  catch(e){if(request.current!==c)return;if(mounted.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'تعذّر تجهيز المختارات.');else if(mounted.current)setError('أخذت المختارات وقتًا أطول من المعتاد. نتائج المتاجر متاحة تحت.');}
+  finally{clearTimeout(timer);if(request.current===c){request.current=null;if(mounted.current)setBusy(false);}}
+ },[term,storeKey,intent?.need,budget]);
+ useEffect(()=>{if(automatic&&!searching&&!started.current){started.current=true;void submit();}},[automatic,searching,submit]);
+ if(dismissed)return <button className="assistant-restore" onClick={()=>setDismissed(false)}>✦ إظهار المختارات الذكية</button>;
+ if(!automatic&&!answer&&!busy&&!error)return <div className="assistant-invitation"><span><strong>نتائج كثيرة؟</strong> نختار لك حتى 3 منتجات من بحثك.</span><button onClick={()=>{started.current=true;void submit();}} disabled={searching}>✦ اختصر لي النتائج</button><small>بالضغط ترسل بحثك وبيانات المنتجات إلى OpenAI. لا ترسل معلومات شخصية أو صحية خاصة.</small></div>;
+ return <section className="shopping-assistant" aria-label="مختارات لك" aria-busy={busy}>
+  <div className="assistant-heading"><span className="assistant-mark" aria-hidden="true">✦</span><div><h3>مختارات لك</h3><p>حسب طلبك، من نتائج المتاجر</p></div><button className="text-button" onClick={()=>setDismissed(true)} aria-label="إخفاء المختارات">إخفاء</button></div>
+  <div className="assistant-content">
+   <div className="assistant-intent" aria-label="تفاصيل طلبك"><span>{term}</span>{budget!==null&&<button onClick={()=>{request.current?.abort();request.current=null;setBusy(false);setBudget(null);setAnswer(null);setError('');started.current=false;}} aria-label="إلغاء حد الميزانية">حتى {budget.toLocaleString('ar-SA')} ر.س <b aria-hidden="true">×</b></button>}{intent&&intent.original!==term&&<small>طلبك: {intent.original}</small>}</div>
+   {busy&&<div className="assistant-working" role="status"><span className="mini-spinner"/><div><strong>نراجع الخيارات المناسبة لطلبك…</strong><p>كمل تصفح نتائج المتاجر؛ نجهّز المختارات هنا.</p></div></div>}
+   {error&&<div className="assistant-error" role="status"><p>{error}</p><button onClick={()=>void submit()}>أعد المحاولة</button><span>تقدر تكمل التصفح والشراء من النتائج أدناه.</span></div>}
+   {!busy&&!answer&&!error&&<button className="assistant-refine" onClick={()=>void submit()}>اعرض المختارات بدون حد للميزانية ←</button>}
+   {answer&&<div className="assistant-answer" aria-live="polite"><p className="assistant-coverage">راجعنا {answer.scanned} منتجًا من {answer.responded} من {answer.requested} متاجر.{answer.cached?' مختارات محفوظة لبضع دقائق.':''}</p>
+   {answer.picks.length>0?<div className="assistant-choices">{answer.picks.map(p=><AssistantChoice key={p.product.store+':'+p.product.id} pick={p}/>)}</div>:<p className="assistant-empty">ما لقينا مختارات مؤكدة لطلبك. جميع نتائج المتاجر ما زالت متاحة.</p>}
+   {answer.question&&<p className="assistant-question">{answer.question}</p>}
+   {answer.refinedQuery&&answer.refinedQuery!==term&&<button className="assistant-refine" onClick={()=>onRefine(answer.refinedQuery)}>بحث أدق: <strong>{answer.refinedQuery}</strong><span aria-hidden="true">←</span></button>}
+   <p className="assistant-footnote">اقتراحات بمساعدة AI من عينة النتائج، وليست كل السوق. راجع المواصفات والتوفر ورسوم التوصيل لدى المتجر.</p></div>}
+  </div>
+ </section>;
 }
 function AssistantChoice({pick}:{pick:AssistantPick}){
  const {product:p}=pick,store=storeInfo(p.store),src=productImageSrc(p),[failed,setFailed]=useState(false);
