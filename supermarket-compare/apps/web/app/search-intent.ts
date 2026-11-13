@@ -10,7 +10,7 @@ export function parseSearchIntent(value:string):SearchIntent {
  let query=budget!==null?original.slice(0,match!.index)+original.slice(match!.index!+match![0].length):original;
  query=query.replace(/^(?:أبي|ابي|أبغى|ابغى|أريد|اريد|ابحث عن)\s+/,'').trim();
  const usage=query.match(/\s+(?:للدوام|للعمل|للجامعة|للسفر|للرياضة)(?:\s|$)/);
- if(usage)query=query.slice(0,usage.index)+query.slice(usage.index!+usage[0].length);
+ if(usage)query=query.slice(0,usage.index)+' '+query.slice(usage.index!+usage[0].length);
  query=query.replace(/\s+/g,' ').trim();
  return {original,query:query||original,need:original,budget};
 }
