@@ -10,6 +10,7 @@ import { bindawood } from './stores/bindawood/index';
 
 import { amazon } from './stores/amazon/index';
 import { hungerstation } from './stores/hungerstation/index';
+export {fetchHungerstationImage} from './stores/hungerstation/image';
 
 // Server-only registry. Never import this package into a browser component.
 export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, lulu];

@@ -1,10 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {branches,parseHungerstation,searchHungerstation} from '../../connectors/src/stores/hungerstation/client';
+import {branches,parseHungerstation,searchHungerstation,hungerstationImageUrl} from '../../connectors/src/stores/hungerstation/client';
 import {searchStores} from '../src/index';
 import {hungerstation} from '../../connectors/src/stores/hungerstation/index';
 const term='حليب المراعي';
-const item={id:'product-1',sku:'milk_EA',name:'حليب المراعي 1 لتر',price:7,originalPrice:9,activePromotions:[{discountValue:5}],images:[{url:'https://hungerstation.dhmedia.io/milk.jpg'}]};
+const item={id:'product-1',sku:'milk_EA',name:'حليب المراعي 1 لتر',price:7,originalPrice:9,activePromotions:[{discountValue:5}],images:[{url:'https://hungerstation.dhmedia.io/image/product-information-management/milk.jpg'}]};
 function fixture(branch:(typeof branches)[number]=branches[0],items:unknown[]=[item],href?:string,edit?:(data:any)=>void){
   const data={page:'/supermarkets/[chain]',query:{chain:branch.slug,query:term},props:{pageProps:{
     chain:{id:branch.chainId},vendor:{id:branch.vendorId,chainId:branch.chainId,status:'CLOSE'},
@@ -19,6 +19,14 @@ test('Hungerstation uses actual price and observed product URL, names branch and
  assert.match(p.location,/الرياض.*حي الاختبار.*مغلق/);assert.match(p.id,/141190:/);
  assert.equal(p.url,'https://hungerstation.com/sa-ar/supermarkets/al-othaim-65969/product/milk-milk_EA');
  assert.equal(p.fetchedAt,'2026-11-13T00:00:00.000Z');
+ assert.equal(p.imageUrl,'https://hungerstation.dhmedia.io/image/product-information-management/milk.jpg?width=350&quality=75&webp=true');
+});
+test('Hungerstation thumbnails validate their source, replace oversized transforms, and tolerate missing images',()=>{
+ const base='https://hungerstation.dhmedia.io/image/product-information-management/milk.png';
+ assert.equal(hungerstationImageUrl(base+'?width=2000&quality=100'),base+'?width=350&quality=75&webp=true');
+ for(const value of [null,'bad','http://hungerstation.dhmedia.io/image/product-information-management/milk.png',base.replace('hungerstation.dhmedia.io','example.com'),base.replace('https://','https://user@'),base.replace('milk.png','milk.svg')])assert.equal(hungerstationImageUrl(value),undefined);
+ const [p]=parseHungerstation(fixture(branches[0],[{...item,images:null}]),branches[0],term);
+ assert.equal(p.imageUrl,undefined);assert.equal(p.price,7);
 });
 test('Hungerstation empty search is valid; empty HTML, wrong query, branch or city are failures',()=>{
  assert.deepEqual(parseHungerstation(fixture(branches[0],[]),branches[0],term),[]);

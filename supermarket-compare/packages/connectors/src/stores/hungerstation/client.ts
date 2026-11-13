@@ -12,6 +12,21 @@ export const branches = [
 type Branch = (typeof branches)[number];
 const origin='https://hungerstation.com';
 
+/** Match the public site's thumbnail format instead of sending multi-MB originals to phones. */
+export function hungerstationImageUrl(value:unknown):string|undefined {
+  if(typeof value!=='string') return;
+  try {
+    const url=new URL(value);
+    if(url.origin!=='https://hungerstation.dhmedia.io' || url.username || url.password ||
+      !/^\/image\/product-information-management\/[a-zA-Z0-9_-]+\.(png|jpe?g|webp)$/i.test(url.pathname)) return;
+    url.search='';
+    url.searchParams.set('width','350');
+    url.searchParams.set('quality','75');
+    url.searchParams.set('webp','true');
+    return url.href;
+  } catch { return; }
+}
+
 export function parseHungerstation(html:string, branch:Branch, term:string, now=new Date()):Product[] {
   const $=load(html);
   const data=JSON.parse($('#__NEXT_DATA__').text());
@@ -37,7 +52,7 @@ export function parseHungerstation(html:string, branch:Branch, term:string, now=
       typeof item.name!=='string' || !item.name.trim() || typeof item.price!=='number' || !Number.isFinite(item.price) || item.price<=0) return [];
     const url=links.find(link=>decodeURIComponent(link.pathname).endsWith(`-${item.sku}`));
     if(!url) return [];
-    const image=Array.isArray(item.images)?item.images.find((image: any)=>typeof image?.url==='string' && image.url.startsWith('https://'))?.url:undefined;
+    const image=Array.isArray(item.images)?item.images.map((image: any)=>hungerstationImageUrl(image?.url)).find(Boolean):undefined;
     return [{store:'hungerstation',id:`${branch.vendorId}:${item.id}`,retailer:branch.name,name:item.name,
       price:item.price,currency:'SAR',url:url.href,imageUrl:image,availability:'unknown',
       location:`${branch.name} · الرياض، ${p.district.name.ar} · فرع هنقرستيشن الافتراضي${p.vendor.status==='CLOSE'?' · المتجر مغلق وقت البحث':''}`,

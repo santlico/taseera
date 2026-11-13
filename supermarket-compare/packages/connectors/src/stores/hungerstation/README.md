@@ -22,3 +22,14 @@ throw so the UI can offer retry. Legitimate empty `items` is a successful empty 
 Verified against live public search and rendered product links on 2026-11-13.
 Parser, pricing, branch drift, unsafe links, partial failure, all failure, and cancellation
 are covered by `packages/core/tests/hungerstation.test.ts`.
+
+## Product images
+
+Use the public site's 350px / quality 75 / WebP thumbnail transform rather than
+multi-megabyte original assets. The web UI serves these through the same-origin
+`/api/hungerstation-image?id=<asset filename>` route because direct browser CDN
+connections remained pending in observed testing. The route pins the CDN and path,
+rejects redirects and non-image responses, enforces a 512 KiB limit and 6-second
+deadline, uses IPv4 transport, and caches successful public thumbnails. It never
+forwards cookies or accepts arbitrary upstream URLs. Product image failure does
+not discard an offer. Verified native browser decoding at 350x350 on mobile.
