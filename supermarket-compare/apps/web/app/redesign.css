@@ -74,3 +74,4 @@ button:active:not(:disabled){transform:translateY(1px) scale(.985)}
 
 .scope-picker .scope-icon-electronics{background:#eaf0ff;color:#3558ad}
 @media(max-width:599px){.scope-picker button{font-size:10px}.scope-picker button>.scope-icon{width:34px;height:34px}.scope-picker .ui-icon{width:21px;height:21px}}
+@media(max-width:599px){.has-results .scope-picker button{flex-direction:column;gap:3px;padding:5px 1px;min-height:58px}.has-results .scope-picker button>.scope-label{font-size:10px;line-height:1.45;white-space:normal;overflow-wrap:normal}.has-results .scope-picker button>.scope-icon{flex-shrink:0;width:22px;height:22px}}
