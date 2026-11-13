@@ -13,6 +13,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'united',name:'المتحدة',english:'United Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · جدة الافتراضية دون تحديد عنوان',logo:'/stores/united.png'},
  {id:'whites',name:'وايتس',english:'Whites Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · الكتالوج العام دون تحديد طريقة التوصيل',logo:'/stores/whites.png'},
  {id:'innova',name:'إنوفا',english:'Innova Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · عنوان وطريقة الشحن غير محددين',logo:'/stores/innova.png'},
+ {id:'lemon',name:'ليمون',english:'Lemon Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/lemon.png'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
