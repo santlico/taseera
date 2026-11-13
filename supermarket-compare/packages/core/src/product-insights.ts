@@ -8,7 +8,7 @@ export function normalizeText(value: string): string {
 
 const aliases: [RegExp, string][] = [
   [/\b(almarai|al marai)\b|المراعي/g, 'المراعي'], [/\bsadia\b|ساديا/g, 'ساديا'],
-  [/\bpepsi\b|بيبسي/g, 'بيبسي'], [/\b(coca cola|cocacola)\b|كوكا كولا/g, 'كوكاكولا'],
+  [/\bpepsi\b|بيبسي|ببسي/g, 'بيبسي'], [/\b(coca cola|cocacola)\b|كوكا كولا/g, 'كوكاكولا'],
   [/\brainbow\b|رينبو/g, 'رينبو'], [/\bnadec\b|نادك/g, 'نادك'], [/\bnido\b|نيدو/g, 'نيدو'],
   [/\bpanadol\b|بانادول|بنادول/g, 'بانادول'], [/\bcetaphil\b|سيتافيل/g, 'سيتافيل'],
   [/\bmilk\b|حليب/g, 'حليب'], [/\bchicken\b|دجاج/g, 'دجاج'], [/\bbreasts?\b|صدور/g, 'صدور'],

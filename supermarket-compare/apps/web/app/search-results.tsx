@@ -12,7 +12,7 @@ const time=(value:string)=>new Date(value).toLocaleTimeString('ar-SA',{hour:'2-d
 const stock=(p:Product)=>p.availability==='in_stock'?'متوفر':p.availability==='out_of_stock'?'غير متوفر':'التوفر غير مؤكد';
 
 export function SearchResults({search,onRetry,onCancel,onShare,loading}:{search:LiveSearch;onRetry:(id:StoreId)=>void;onCancel:()=>void;onShare:()=>void;loading:boolean}){
- const [tab,setTab]=useState<StoreId|'all'>('all'),[sort,setSort]=useState('relevance'),[stockOnly,setStockOnly]=useState(false),[nearOnly,setNearOnly]=useState(true);
+ const [tab,setTab]=useState<StoreId|'all'>('all'),[sort,setSort]=useState('relevance'),[stockOnly,setStockOnly]=useState(false),[nearOnly,setNearOnly]=useState(false);
  const [limit,setLimit]=useState(24),[chosen,setChosen]=useState<Product[]>([]),[compare,setCompare]=useState(false);
  const comparison=useRef<HTMLElement>(null);
  const entries=useMemo(()=>search.results.flatMap(r=>r.products.map((p,sourceIndex)=>({product:p,sourceIndex,rank:searchRelevance(p,search.term)}))),[search]);

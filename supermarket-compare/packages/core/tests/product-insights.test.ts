@@ -44,3 +44,9 @@ test('source queries drop explicit quantities while keeping identity and never b
  assert.equal(sourceSearchTerm('قهوة عربية 250 غرام'),'قهوة عربية');
  assert.equal(sourceSearchTerm('iPhone 16 128GB'),'iPhone 16 128GB');
 });
+
+test('Pepsi common Arabic spelling matches Arabic and English titles without relaxing brand or quantity checks',()=>{
+ for(const name of ['بيبسي 330 مل','Pepsi 330 ml','ببسي 330 مل'])assert.equal(searchRelevance(p(name),'ببسي'),1);
+ assert.equal(searchRelevance(p('كوكا كولا 330 مل'),'ببسي'),0);
+ assert.equal(searchRelevance(p('بيبسي 2 لتر'),'ببسي 1 لتر'),0);
+});
