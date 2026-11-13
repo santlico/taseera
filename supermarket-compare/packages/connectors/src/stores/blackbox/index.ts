@@ -36,4 +36,4 @@ export async function searchBlackbox(query:SearchQuery,signal:AbortSignal){
  if(!response.ok)throw new Error(`Blackbox search HTTP ${response.status}`);
  return {products:parseBlackboxResponse(JSON.parse(text)),notice:'الصندوق الأسود: أول 30 نتيجة من البحث السعودي بسعر الشراء الحالي شامل الضريبة، دون خصم استرجاع نقدي أو احتساب سعر العضوية. تحقق من البائع والموديل والسعة واللون والضمان والتوفر والتوصيل لدى المتجر.'};
 }
-export const blackbox:StoreConnector={id:'blackbox',name:'الصندوق الأسود',enabled:process.env.NODE_ENV==='development',preserveSearchTerm:true,search:searchBlackbox};
+export const blackbox:StoreConnector={id:'blackbox',name:'الصندوق الأسود',enabled:false,preserveSearchTerm:true,search:searchBlackbox};

@@ -9,7 +9,7 @@ import {ShoppingAssistant} from './shopping-assistant';
 import {UiIcon} from './ui-icon';
 import {StoreLogo} from './store-logo';
 import {productImageSrc} from './product-image';
-import type {LiveSearch} from './search-client';
+import {assistantReadyStores,type LiveSearch} from './search-client';
 const offerFacts=(p:Product):ProductFacts=>['pharmacy','electronics'].includes(storeInfo(p.store).category)?{}:productFacts(p);
 const money=(n:number)=>n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const keyOf=(p:Product)=>`${p.store}:${p.id}`;
@@ -45,7 +45,7 @@ export function SearchResults({search,onRetry,onCancel,onShare,onRefine,loading}
  return <section className={`results ${chosen.length?'has-comparison':''}`} aria-label="نتائج البحث" data-search-state={loading?'loading':'complete'}>
   <div className="result-title"><div><h2>نتائج «{search.term}»</h2><span>بدأ البحث {time(search.startedAt)} · توقيت الرياض</span></div><div className="result-actions">{loading?<button className="text-button" onClick={onCancel}>إيقاف البحث</button>:<button className="secondary" onClick={onShare}>مشاركة البحث ↗</button>}</div></div>
   <div className={`search-progress ${loading?'is-loading':''}`} aria-live="polite"><span>{loading?<><span className="mini-spinner"/> وصلت نتائج {success} من {search.results.length} متاجر؛ نكمل البحث…</>:<>{cancelled?'أُوقف البحث':'انتهى البحث'} · {success} من {search.results.length} متاجر استجابت</>}</span><span>{near} نتيجة أقرب لبحثك <small>من {entries.length} نتائج المتاجر</small></span></div>
-  <ShoppingAssistant key={`${search.startedAt}:${search.smart}`} intent={search.intent} automatic={!!search.smart} term={search.term} stores={search.results.map(r=>r.store)} searching={loading} onRefine={onRefine}/>
+  <ShoppingAssistant key={`${search.startedAt}:${search.smart}`} intent={search.intent} automatic={!!search.smart} term={search.term} stores={assistantReadyStores(search.results)} searching={loading&&assistantReadyStores(search.results).length===0} onRefine={onRefine}/>
   <details className="health-details"><summary>حالة المتاجر <span>{success} من {search.results.length} استجابت</span>{failed.length+partial.length>0&&<span className="health-warning">{failed.length+partial.length} لم تكتمل</span>}</summary><div className="store-health" aria-label="حالة البحث في كل متجر">{search.results.map(r=>{const s=storeInfo(r.store);return <div className={`health-item ${r.status}`} key={r.store}><StoreLogo src={s.logo} name={s.name}/><div><strong>{s.name}</strong><span>{r.status==='pending'?'جارٍ البحث…':r.status==='ok'?`${r.products.length} نتيجة${r.partial?' · تغطية جزئية':' من المصدر'}`:r.status==='cancelled'?'أُوقف البحث':r.status==='timeout'?'انتهت المهلة':'تعذّر الاتصال'}</span></div>{r.status==='pending'?<span className="mini-spinner"/>:r.status!=='ok'||r.partial?<button aria-label={`إعادة البحث في ${s.name}`} onClick={()=>onRetry(r.store)}>أعد المحاولة</button>:<span className="health-check" aria-label="نجح البحث">✓</span>}</div>})}</div></details>
   {!loading&&failed.length>0&&<div className="partial-notice"><span>لم يكتمل البحث في {failed.length} من المتاجر.{success?' بقية النتائج متاحة.':''}</span><button className="text-button" onClick={()=>failed.forEach(r=>onRetry(r.store))}>أعد المحاولة ({failed.length})</button></div>}
 

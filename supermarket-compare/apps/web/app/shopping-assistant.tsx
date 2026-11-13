@@ -14,24 +14,26 @@ export function ShoppingAssistant({term,stores,searching,onRefine,intent,automat
  const storeKey=stores.slice().sort().join(',');
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;request.current?.abort();request.current=null;started.current=false;};},[]);
  const submit=useCallback(async()=>{
-  if(request.current)return;
+  if(request.current||!storeKey)return;
   const c=new AbortController();request.current=c;const timer=setTimeout(()=>c.abort(),45000);setBusy(true);setError('');setAnswer(null);
   try{const r=await fetch('/api/assistant',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({term,stores:storeKey.split(','),note:budget===null&&intent?.budget!=null?term:intent?.need||term,budget}),signal:c.signal});const d=await r.json();if(!r.ok)throw Error(typeof d.error==='string'?d.error:'تعذّر تجهيز المختارات.');if(!Array.isArray(d.picks)||d.picks.length>3)throw Error('تعذّر تجهيز المختارات.');if(mounted.current&&!c.signal.aborted)setAnswer(d);}
   catch(e){if(request.current!==c)return;if(mounted.current&&!c.signal.aborted)setError(e instanceof Error?e.message:'تعذّر تجهيز المختارات.');else if(mounted.current)setError('أخذت المختارات وقتًا أطول من المعتاد. نتائج المتاجر متاحة تحت.');}
   finally{clearTimeout(timer);if(request.current===c){request.current=null;if(mounted.current)setBusy(false);}}
  },[term,storeKey,intent?.need,budget]);
- useEffect(()=>{if(automatic&&!searching&&!started.current){started.current=true;void submit();}},[automatic,searching,submit]);
+ useEffect(()=>{if(automatic&&!!storeKey&&!started.current){started.current=true;void submit();}},[automatic,storeKey,submit]);
  if(dismissed)return <button className="assistant-restore" onClick={()=>setDismissed(false)}>✦ إظهار المختارات الذكية</button>;
- if(!automatic&&!answer&&!busy&&!error)return <div className="assistant-invitation"><span><strong>نتائج كثيرة؟</strong> نختار لك حتى 3 منتجات من بحثك.</span><button onClick={()=>{started.current=true;void submit();}} disabled={searching}>✦ اختصر لي النتائج</button><small>بالضغط ترسل بحثك وبيانات المنتجات إلى OpenAI. لا ترسل معلومات شخصية أو صحية خاصة.</small></div>;
+ if(!automatic&&!answer&&!busy&&!error)return <div className="assistant-invitation"><span><strong>نتائج كثيرة؟</strong> نختار لك حتى 3 منتجات من بحثك.</span><button onClick={()=>{started.current=true;void submit();}} disabled={!storeKey}>✦ اختصر لي النتائج</button><small>بالضغط ترسل بحثك وبيانات المنتجات إلى OpenAI. لا ترسل معلومات شخصية أو صحية خاصة.</small></div>;
  return <section className="shopping-assistant" aria-label="مختارات لك" aria-busy={busy}>
   <div className="assistant-heading"><span className="assistant-mark" aria-hidden="true">✦</span><div><h3>مختارات لك</h3><p>حسب طلبك، من نتائج المتاجر</p></div><button className="text-button" onClick={()=>setDismissed(true)} aria-label="إخفاء المختارات">إخفاء</button></div>
   <div className="assistant-content">
    <div className="assistant-intent" aria-label="تفاصيل طلبك"><span>{term}</span>{budget!==null&&<button onClick={()=>{request.current?.abort();request.current=null;setBusy(false);setBudget(null);setAnswer(null);setError('');started.current=false;}} aria-label="إلغاء حد الميزانية">حتى {budget.toLocaleString('ar-SA')} ر.س <b aria-hidden="true">×</b></button>}{intent?.budget!=null&&budget===null&&<span>بدون حد للميزانية</span>}{intent&&intent.original!==term&&<small>بحثك الأصلي: {intent.original}</small>}</div>
    {busy&&<div className="assistant-working" role="status"><span className="mini-spinner"/><div><strong>نراجع الخيارات المناسبة لطلبك…</strong><p>كمل تصفح نتائج المتاجر؛ نجهّز المختارات هنا.</p></div></div>}
    {error&&<div className="assistant-error" role="status"><p>{error}</p><button onClick={()=>void submit()}>أعد المحاولة</button><span>تقدر تكمل التصفح والشراء من النتائج أدناه.</span></div>}
-   {searching&&!busy&&!answer&&<p className="assistant-status" role="status">تظهر نتائج المتاجر أولًا، ثم نجهّز المختارات تلقائيًا.</p>}
-   {!searching&&!busy&&!answer&&!error&&<button className="assistant-refine" onClick={()=>void submit()}>اعرض المختارات بدون حد للميزانية ←</button>}
-   {answer&&<div className="assistant-answer" aria-live="polite"><p className="assistant-coverage">راجعنا {answer.scanned} منتجًا من {answer.responded} من {answer.requested} متاجر.{answer.cached?' مختارات محفوظة لبضع دقائق.':''}</p>
+   {searching&&!busy&&!answer&&<p className="assistant-status" role="status">نبدأ المختارات بمجرد وصول منتجات من أي متجر، بدون انتظار البقية.</p>}
+   {!storeKey&&!searching&&!busy&&!answer&&<p className="assistant-status">ما وصلتنا منتجات للمختارات حتى الآن. تقدر تعيد المحاولة في المتاجر.</p>}
+   {!!storeKey&&!busy&&!answer&&!error&&<button className="assistant-refine" onClick={()=>void submit()}>اعرض المختارات بدون حد للميزانية ←</button>}
+   {answer&&<div className="assistant-answer" aria-live="polite"><p className="assistant-coverage">راجعنا {answer.scanned} منتجًا من {answer.responded} من {answer.requested} متاجر للتحليل؛ المتاجر المتأخرة لا تمنع المختارات.{answer.cached?' مختارات محفوظة لبضع دقائق.':''}</p>
+   {stores.length>answer.requested&&<button className="assistant-refine" onClick={()=>void submit()}>وصلت منتجات من متاجر إضافية · حدّث المختارات ←</button>}
    {answer.picks.length>0?<div className={`assistant-choices ${expanded?'is-expanded':''}`}>{answer.picks.map(p=><AssistantChoice key={p.product.store+':'+p.product.id} pick={p}/>)}</div>:<p className="assistant-empty">ما لقينا مختارات مؤكدة لطلبك. جميع نتائج المتاجر ما زالت متاحة.</p>}
    {answer.picks.length>1&&<button className="assistant-more" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?'اختصر المختارات':`عرض ${answer.picks.length-1} مختارات إضافية`} <span aria-hidden="true">{expanded?'−':'+'}</span></button>}
    {answer.question&&<p className="assistant-question">{answer.question}</p>}

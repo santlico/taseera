@@ -22,3 +22,6 @@ export async function requestStore(term: string, store: StoreId, signal: AbortSi
     signal.removeEventListener('abort', abort);
   }
 }
+
+// Only sources that already delivered usable products participate in smart picks.
+export function assistantReadyStores(results:LiveStoreResult[]):StoreId[]{return [...new Set(results.filter(r=>r.status==='ok'&&r.products.length>0).map(r=>r.store))];}
