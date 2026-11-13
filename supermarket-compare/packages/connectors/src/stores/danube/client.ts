@@ -1,3 +1,4 @@
+import { fetchStoreDocument } from '../../shared/http';
 import type { Product, SearchQuery } from '@market/core';
 import { parseWeight, matchesWeight } from '../../shared/search-query';
 
@@ -11,6 +12,8 @@ interface Hit {
 // Observed public store_selector mapping: district 296 (الريان) -> supermarket 378 (الروابي).
 // Scope stays explicit; do not claim support for other Riyadh districts yet.
 export function mapDanubeHit(hit: Hit): Product | null {
+  if (!hit || typeof hit.url_ar !== 'string' || !String(hit.objectID ?? '').trim() ||
+      typeof (hit.full_name_ar || hit.name_ar) !== 'string' || !(hit.full_name_ar || hit.name_ar).trim()) return null;
   const modifiers = hit.inventory_modifiers;
   const modifier = modifiers?.['378_hd'] ?? modifiers?.['378_'] ?? modifiers?.['_hd'];
   if (modifier?.available === false) return null;
@@ -18,8 +21,9 @@ export function mapDanubeHit(hit: Hit): Product | null {
   if (rawPrice === null || rawPrice === undefined || rawPrice === '') return null;
   const price = Number(rawPrice);
   if (!Number.isFinite(price) || price <= 0) return null;
-  const url = new URL(hit.url_ar, 'https://www.danube.sa');
-  if (!['www.danube.sa', 'danube.sa'].includes(url.hostname) || !url.pathname.startsWith('/products/')) return null;
+  let url: URL;
+  try { url = new URL(hit.url_ar, 'https://www.danube.sa'); } catch { return null; }
+  if (url.protocol !== 'https:' || !['www.danube.sa', 'danube.sa'].includes(url.hostname) || !url.pathname.startsWith('/products/')) return null;
   const stock = modifier?.in_stock ?? hit.in_stock;
   return {store:'danube',id:String(hit.objectID),name:hit.full_name_ar || hit.name_ar,
     brand:hit.brand_ar,price,currency:'SAR',url:url.href,imageUrl:hit.image,
@@ -31,9 +35,8 @@ export async function searchDanube(query: SearchQuery, signal: AbortSignal): Pro
   if (query.city !== 'الرياض' || (query.storeLocationId && query.storeLocationId !== '378')) {
     throw new Error('Only Riyadh Al Rayyan is configured');
   }
-  const page = await fetch('https://www.danube.sa/search?query=' + encodeURIComponent(query.term), { signal });
-  if (!page.ok) throw new Error('Danube page failed');
-  const html = await page.text();
+  const {response: page, text: html} = await fetchStoreDocument('danube', 'https://www.danube.sa/search?query=' + encodeURIComponent(query.term), {signal});
+  if (!page.ok) throw new Error(`Danube page failed (HTTP ${page.status})`);
   // Public browser search credentials are discovered from the site's own page, never personal credentials.
   const app = html.match(/appId:\s*'([A-Z0-9]+)'/)?.[1];
   const key = html.match(/apiKey:\s*'([^']+)'/)?.[1];
@@ -41,13 +44,13 @@ export async function searchDanube(query: SearchQuery, signal: AbortSignal): Pro
   const tenant = html.match(/var currentTenantId\s*=\s*(\d+)/)?.[1];
   if (!app || !key || !index || !tenant) throw new Error('Danube search config changed');
   const requestHits = async (term: string): Promise<Hit[]> => {
-  const response = await fetch(`https://${app}-dsn.algolia.net/1/indexes/${index}/query`, {
-    method:'POST', signal, headers:{'Content-Type':'application/json','X-Algolia-Application-Id':app,'X-Algolia-API-Key':key},
+  const {response, text} = await fetchStoreDocument('danube', `https://${app}-dsn.algolia.net/1/indexes/${index}/query`, {
+    method:'POST', signal, headers:{Accept:'application/json','Content-Type':'application/json','X-Algolia-Application-Id':app,'X-Algolia-API-Key':key},
     body:JSON.stringify({query:term,filters:`tenant_id = ${tenant}`,hitsPerPage:40}),
   });
-  if (!response.ok) throw new Error('Danube search failed');
-  const data = await response.json() as {hits:Hit[]};
-  if (!Array.isArray(data.hits)) throw new Error('Invalid Danube response');
+  if (!response.ok) throw new Error(`Danube search failed (HTTP ${response.status})`);
+  const data = JSON.parse(text) as {hits:Hit[]};
+  if (!data || !Array.isArray(data.hits)) throw new Error('Invalid Danube response');
   return data.hits;
   }
   const weight = parseWeight(query.term);

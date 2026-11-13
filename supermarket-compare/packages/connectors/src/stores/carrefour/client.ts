@@ -1,3 +1,4 @@
+import { fetchStoreDocument } from '../../shared/http';
 import { carrefourHeaders, fetchCarrefourDocument } from './document';
 import type { Product, SearchQuery } from '@market/core';
 
@@ -69,8 +70,7 @@ export async function searchCarrefour(query: SearchQuery, signal: AbortSignal): 
   url.searchParams.set('keyword',query.term);
   // Request the public document directly. Some upstream edges return a tiny
   // HTML shell for RSC requests from hosted servers.
-  let response = await fetch(url,{signal,headers:carrefourHeaders,cache:'no-store'});
-  let text = await response.text();
+  let {response, text} = await fetchStoreDocument('carrefour', url, {signal, headers:carrefourHeaders});
   let transport = 'fetch';
   // An empty 200 document is not an empty product search. Try the standard
   // Node HTTPS transport once; use no browser identity, cookies, or session tokens.

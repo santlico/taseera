@@ -11,3 +11,11 @@ test('Danube excludes unavailable products and invalid prices',()=>{
   assert.equal(mapDanubeHit({...hit,inventory_modifiers:{'378_':{available:false}}}),null);
   assert.equal(mapDanubeHit({...hit,price:NaN}),null);
 });
+
+
+test('danube skips malformed products instead of throwing away a store search',()=>{
+ const hit={objectID:'1',name_ar:'حليب',price:12,url_ar:'/products/milk'};
+ assert.equal(mapDanubeHit({...hit,url_ar:'https://['}),null);
+ assert.equal(mapDanubeHit({...hit,url_ar:'http://www.danube.sa/products/milk'}),null);
+ assert.equal(mapDanubeHit({...hit,name_ar:' '}),null);
+});

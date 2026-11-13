@@ -1,3 +1,4 @@
+import { fetchStoreDocument } from '../../shared/http';
 import { load } from 'cheerio';
 import type { Product, SearchQuery } from '@market/core';
 
@@ -58,10 +59,10 @@ export async function searchAmazon(query: SearchQuery, signal: AbortSignal): Pro
   if (query.storeLocationId) throw new Error('Amazon custom delivery location is not supported');
   const url = new URL('https://www.amazon.sa/s');
   url.searchParams.set('k', query.term);
-  const response = await fetch(url, {signal, cache: 'no-store', headers: {
+  const {response, text} = await fetchStoreDocument('amazon', url, {signal, cache: 'no-store', headers: {
     Accept: 'text/html', 'Accept-Language': 'ar-SA,ar;q=0.9,en;q=0.8', 'User-Agent': 'Taseera/1.0',
   }});
   if (!response.ok) throw new Error(`Amazon search request failed (HTTP ${response.status})`);
   if (!response.headers.get('content-type')?.includes('text/html')) throw new Error('Amazon returned unexpected content type');
-  return parseAmazonResponse(await response.text());
+  return parseAmazonResponse(text);
 }

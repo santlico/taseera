@@ -1,3 +1,4 @@
+import { fetchStoreDocument } from '../../shared/http';
 import type { Product, SearchQuery } from '@market/core';
 interface StoreData { storeId:number; mrp:string; discount:string; stock:number|null; unlimitedStock?:boolean }
 interface Variant {id:number;fullName?:string;name:string;images?:string[];storeSpecificData?:StoreData[];brand?:{name:string}}
@@ -41,7 +42,7 @@ export function parseTamimiResponse(html:string):Product[] {
 export async function searchTamimi(query:SearchQuery,signal:AbortSignal):Promise<Product[]>{
   if(query.storeLocationId)throw new Error('Custom Tamimi branch is not supported');
   const url=new URL('https://shop.tamimimarkets.com/ar/search');url.searchParams.set('query',query.term);
-  const response=await fetch(url,{signal});
-  if(!response.ok)throw new Error('Tamimi request failed');
-  return parseTamimiResponse(await response.text());
+  const {response,text}=await fetchStoreDocument('tamimi',url,{signal});
+  if(!response.ok)throw new Error(`Tamimi request failed (HTTP ${response.status})`);
+  return parseTamimiResponse(text);
 }

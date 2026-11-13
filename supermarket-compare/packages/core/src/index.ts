@@ -1,3 +1,6 @@
+import { validateProducts } from './validation';
+export { productFacts, searchRelevance, comparisonWarning, normalizeText } from './product-insights';
+export type { ProductFacts } from './product-insights';
 export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon';
 
 export interface SearchQuery {
@@ -59,7 +62,8 @@ export async function searchStores(
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
       });
-      const products = await Promise.race([connector.search(normalized, controller.signal), timeout]);
+      const rawProducts = await Promise.race([connector.search(normalized, controller.signal), timeout]);
+      const products = validateProducts(rawProducts, connector.id);
       return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start };
     } catch (error) {
       // Keep diagnostics on the server; never expose upstream details to clients.
@@ -68,6 +72,8 @@ export async function searchStores(
         timedOut: controller.signal.aborted,
         durationMs: Date.now() - start,
         reason: error instanceof Error ? error.message : 'Unknown connector error',
+        code: error instanceof Error && typeof error.cause === 'object' && error.cause !== null && 'code' in error.cause
+          ? String(error.cause.code).slice(0, 64) : undefined,
       });
       return { store: connector.id, status: controller.signal.aborted ? 'timeout' : 'error', products: [],
         durationMs: Date.now() - start, message: controller.signal.aborted ? 'Store request timed out' : 'Store search failed' };

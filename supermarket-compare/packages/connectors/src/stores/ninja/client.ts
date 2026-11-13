@@ -1,17 +1,24 @@
+import { load } from 'cheerio';
+import { fetchStoreDocument } from '../../shared/http';
 import type { Product, SearchQuery } from '@market/core';
 type Obj=Record<string,unknown>;
 const object=(v:unknown):v is Obj=>typeof v==='object'&&v!==null&&!Array.isArray(v);
 export function parseNinjaResponse(html:string):Product[]{
   let flight='';
-  for(const script of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)){
-    const match=script[1].match(/^self\.__next_f\.push\((\[[\s\S]*\])\)\s*;?$/);
-    if(!match)continue;
-    try{const chunk=JSON.parse(match[1]);if(typeof chunk[1]==='string')flight+=chunk[1]}catch{}
+  for(const script of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\s*>/gi)){
+    for(const match of script[1].matchAll(/\bself\.__next_f\.push\(\[1,\s*("(?:[^"\\]|\\.)*")\s*\]\)\s*;?/g)){
+      try{flight+=JSON.parse(match[1])}catch{}
+    }
   }
   const links=new Map<string,string>();
-  for(const match of html.matchAll(/href="(\/sa\/ar\/product\/[^"?]+)"/g)){
-    const id=match[1].match(/-(\d+)$/)?.[1];if(id)links.set(id,match[1]);
-  }
+  const $=load(html);
+  $('a[href]').each((_,anchor)=>{
+    try{
+      const url=new URL($(anchor).attr('href')!, 'https://ananinja.com');
+      const id=url.pathname.match(/^\/sa\/ar\/product\/[^/]+-(\d+)$/)?.[1];
+      if(url.protocol==='https:'&&url.hostname==='ananinja.com'&&id)links.set(id,url.pathname);
+    }catch{}
+  });
   const products=new Map<string,Product>();let found=false;
   function walk(value:unknown){
     if(Array.isArray(value)){value.forEach(walk);return}
@@ -19,7 +26,7 @@ export function parseNinjaResponse(html:string):Product[]{
     if(Array.isArray(value.searchedProducts)){
       found=true;
       for(const item of value.searchedProducts){
-        if(!object(item)||typeof item.productId!=='string'||typeof item.nameAr!=='string'||typeof item.priceCents!=='number')continue;
+        if(!object(item)||typeof item.productId!=='string'||typeof item.nameAr!=='string'||!item.nameAr.trim()||typeof item.priceCents!=='number')continue;
         const path=links.get(item.productId);
         const cents=typeof item.discountedPriceCents==='number'&&item.discountedPriceCents>0?item.discountedPriceCents:item.priceCents;
         if(!path||!Number.isFinite(cents)||cents<=0)continue;
@@ -43,6 +50,6 @@ export function parseNinjaResponse(html:string):Product[]{
 export async function searchNinja(query:SearchQuery,signal:AbortSignal):Promise<Product[]>{
   if(query.storeLocationId)throw new Error('Ninja custom location not supported');
   const url=new URL('https://ananinja.com/sa/ar/product/search');url.searchParams.set('q',query.term);
-  const response=await fetch(url,{signal});if(!response.ok)throw new Error('Ninja search failed');
-  return parseNinjaResponse(await response.text());
+  const {response,text}=await fetchStoreDocument('ninja',url,{signal});if(!response.ok)throw new Error(`Ninja search failed (HTTP ${response.status})`);
+  return parseNinjaResponse(text);
 }
