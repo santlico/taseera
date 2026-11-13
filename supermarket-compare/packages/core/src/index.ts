@@ -2,7 +2,7 @@ import { sourceSearchTerm } from './product-insights';
 import { validateProducts } from './validation';
 export { productFacts, searchRelevance, comparisonWarning, normalizeText } from './product-insights';
 export type { ProductFacts } from './product-insights';
-export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon' | 'hungerstation' | 'noon';
+export type StoreId = 'othaim' | 'danube' | 'sadhan' | 'tamimi' | 'lulu' | 'carrefour' | 'ninja' | 'bindawood' | 'amazon' | 'hungerstation' | 'noon' | 'nahdi';
 
 export interface SearchQuery {
   term: string;
@@ -36,6 +36,7 @@ export interface StoreConnector {
   id: StoreId;
   name: string;
   enabled: boolean;
+  preserveSearchTerm?: boolean;
   search(query: SearchQuery, signal: AbortSignal): Promise<Product[] | ConnectorSearchResult>;
 }
 
@@ -73,7 +74,7 @@ export async function searchStores(
       const timeout = new Promise<never>((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error('timeout')); }, timeoutMs);
       });
-      const rawProducts = await Promise.race([connector.search(sourceQuery, controller.signal), timeout]);
+      const rawProducts = await Promise.race([connector.search(connector.preserveSearchTerm ? normalized : sourceQuery, controller.signal), timeout]);
       const products = validateProducts(Array.isArray(rawProducts) ? rawProducts : rawProducts.products, connector.id);
       return { store: connector.id, status: 'ok', products, durationMs: Date.now() - start,
         ...(!Array.isArray(rawProducts) ? {notice: rawProducts.notice, partial: rawProducts.partial} : {}) };

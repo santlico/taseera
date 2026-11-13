@@ -2,34 +2,34 @@
 import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {StoreId} from '@market/core';
 import {stores} from './store-catalog';
+import {scopes,scopeStores,restoreSelection,type SearchScope} from './search-scope';
+import {Splash} from './splash';
 import {StoreLogo} from './store-logo';
 import {SearchResults} from './search-results';
 import {requestStore, type LiveSearch, type LiveStoreResult} from './search-client';
-const available=stores.filter(s=>s.enabled);
-const STORE_KEY='taseera.stores.v1', HISTORY_KEY='taseera.history.v1';
+const allAvailable=scopeStores('all');
+const STORE_KEY='taseera.stores.v1', HISTORY_KEY='taseera.history.v1', SCOPE_KEY='taseera.scope.v1';
 function SearchIcon(){return <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>}
 export default function Page(){
- const [selected,setSelected]=useState<StoreId[]>(available.map(s=>s.id));
+ const [scope,setScope]=useState<SearchScope>('all'),[ready,setReady]=useState(false);
+ const available=scopeStores(scope);
+ const [choices,setChoices]=useState<StoreId[]>(allAvailable.map(s=>s.id));
+ const selected=choices.filter(id=>available.some(s=>s.id===id));
  const [term,setTerm]=useState(''),[search,setSearch]=useState<LiveSearch|null>(null);
  const [picker,setPicker]=useState(false),[history,setHistory]=useState<string[]>([]),[notice,setNotice]=useState('');
  const run=useRef(0),controller=useRef<AbortController|null>(null);
  const dialog=useRef<HTMLDialogElement>(null),queryInput=useRef<HTMLInputElement>(null);
- const [draftStores,setDraftStores]=useState<StoreId[]>(available.map(s=>s.id));
+ const [draftStores,setDraftStores]=useState<StoreId[]>(allAvailable.map(s=>s.id));
  const loading=!!search?.results.some(r=>r.status==='pending');
  useEffect(()=>{
   const params=new URLSearchParams(window.location.search),query=params.get('q')?.trim().slice(0,200);
   if(query)setTerm(query);
-  const requested=params.getAll('store');let ids:unknown[]=requested.length?requested:available.map(s=>s.id);
-  try{const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
-   if(!requested.length&&Array.isArray(saved))ids=saved;
-   // Preserve custom choices; migrate the previous explicit "all" selection.
-   if(!requested.length&&Array.isArray(saved)&&saved.length===6&&['danube','carrefour','tamimi','ninja','bindawood','amazon'].every(id=>saved.includes(id)))ids=available.map(s=>s.id);
-   if(!requested.length&&Array.isArray(saved)&&saved.length===7&&['danube','carrefour','tamimi','ninja','bindawood','amazon','hungerstation'].every(id=>saved.includes(id)))ids=available.map(s=>s.id);
-   if(!requested.length&&saved==='all')ids=available.map(s=>s.id);
+  let saved:unknown=null,savedScope:unknown=null;
+  try{saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');savedScope=localStorage.getItem(SCOPE_KEY);
    const recent=JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]');
    if(Array.isArray(recent))setHistory(recent.filter(v=>typeof v==='string'&&v.length<=200).slice(0,5));
   }catch{}
-  setSelected(available.filter(s=>ids.includes(s.id)).map(s=>s.id));
+  const restored=restoreSelection(params,saved,savedScope);setScope(restored.scope);setChoices(restored.ids);setReady(true);
   return()=>controller.current?.abort();
  },[]);
  useEffect(()=>{
@@ -41,13 +41,20 @@ export default function Page(){
   return()=>{document.body.style.overflow=previous;};
  },[picker]);
  function openPicker(){setDraftStores(selected);setPicker(true);}
- function choose(ids:StoreId[]){setSelected(ids);try{localStorage.setItem(STORE_KEY,JSON.stringify(ids.length===available.length?'all':ids));}catch{}}
+ function choose(ids:StoreId[]){const next=[...choices.filter(id=>!available.some(s=>s.id===id)),...ids];setChoices(next);try{localStorage.setItem(STORE_KEY,JSON.stringify(next.length===allAvailable.length?'all':next));}catch{}}
+ function changeScope(next:SearchScope){
+  if(next===scope)return;setScope(next);setPicker(false);try{localStorage.setItem(SCOPE_KEY,next);}catch{}
+  let ids=choices.filter(id=>scopeStores(next).some(s=>s.id===id));
+  if(!ids.length){ids=scopeStores(next).map(s=>s.id);const restored=[...new Set([...choices,...ids])];setChoices(restored);try{localStorage.setItem(STORE_KEY,JSON.stringify(restored.length===allAvailable.length?'all':restored));}catch{}}
+  if(search&&ids.length)start(term.trim()||search.term,ids,next);
+  else {controller.current?.abort();++run.current;setSearch(null);const params=new URLSearchParams(window.location.search);params.set('scope',next);params.delete('store');window.history.replaceState(null,'',`/?${params}`);}
+ }
  function update(id:StoreId,result:LiveStoreResult,version:number){if(run.current===version)setSearch(old=>old?{...old,results:old.results.map(r=>r.store===id?result:r)}:old);}
  async function fetchOne(query:string,id:StoreId,version:number,signal:AbortSignal){
   try{update(id,await requestStore(query,id,signal),version);}
   catch{update(id,{store:id,status:signal.aborted?'cancelled':'error',products:[],durationMs:0},version);}
  }
- function start(query:string,storeIds:StoreId[]=selected){
+ function start(query:string,storeIds:StoreId[]=selected,searchScope:SearchScope=scope){
   query=query.trim();if(!query||!storeIds.length)return;
   if(window.matchMedia('(max-width:800px)').matches)queryInput.current?.blur();
   controller.current?.abort();controller.current=new AbortController();const version=++run.current;
@@ -55,7 +62,7 @@ export default function Page(){
   setSearch({term:query,startedAt:new Date().toISOString(),results:storeIds.map(store=>({store,status:'pending',products:[],durationMs:0}))});
   const recent=[query,...history.filter(q=>q!==query)].slice(0,5);setHistory(recent);
   try{localStorage.setItem(HISTORY_KEY,JSON.stringify(recent));}catch{}
-  const params=new URLSearchParams({q:query});storeIds.forEach(id=>params.append('store',id));window.history.replaceState(null,'',`/?${params}`);
+  const params=new URLSearchParams({q:query,scope:searchScope});storeIds.forEach(id=>params.append('store',id));window.history.replaceState(null,'',`/?${params}`);
   for(const id of storeIds)void fetchOne(query,id,version,controller.current.signal);
  }
  function cancel(){controller.current?.abort();++run.current;setSearch(old=>old?{...old,results:old.results.map(r=>r.status==='pending'?{...r,status:'cancelled'}:r)}:old);setNotice('أُوقف البحث. النتائج التي وصلت ما زالت متاحة.');}
@@ -65,43 +72,46 @@ export default function Page(){
  }
  async function share(){try{await navigator.clipboard.writeText(window.location.href);setNotice('تم نسخ الرابط. افتحه واضغط «ابحث وقارن» للحصول على أسعار جديدة.');}catch{setNotice('تقدر تنسخ رابط البحث من شريط العنوان وتشاركه.');}}
  function submit(event:FormEvent){event.preventDefault();start(term);}
- return <div className="shell">
+ return <>{!ready&&<Splash/>}<div className="shell" aria-busy={!ready}>
   <a className="skip-link" href="#main">انتقل إلى البحث</a>
   <aside className="sidebar" aria-label="إعدادات المقارنة">
    <a className="brand" href="/" aria-label="تسعيرة الرئيسية"><svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true"><path d="M28 4H15L4 15l17 17 11-11V8Z" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round"/><circle cx="24" cy="11" r="2" fill="currentColor"/><path d="m12 19 4 4 8-8" stroke="currentColor" strokeWidth="2.4"/></svg><span>تسعيرة<small>قارن بوضوح. تسوّق بثقة.</small></span></a>
    <span className="mobile-location"><span aria-hidden="true">⌖</span> الرياض <span>· ر.س</span></span>
    <div className="nav-active"><SearchIcon/>البحث والمقارنة</div>
-   <div className="desktop-stores"><div className="section-label"><h2>متاجر بحثك</h2><span><bdi>{selected.length}/{available.length}</bdi></span></div><StoreChoices selected={selected} choose={choose}/></div>
+   <div className="desktop-stores"><div className="section-label"><h2>متاجر بحثك</h2><span><bdi>{selected.length}/{available.length}</bdi></span></div><StoreChoices selected={selected} choose={choose} scope={scope}/></div>
    <div className="side-foot"><span className="status-dot"/> من مواقع المتاجر مباشرة<p>بدون تسجيل دخول.<br/>آخر بحث واختياراتك محفوظة على جهازك.</p></div>
   </aside>
   <main id="main">
    <header className="topbar"><span>مشتريات أوضح. قرار أذكى.</span><span>الرياض والسعر الافتراضي للمتاجر <span className="sep">/</span> الأسعار بالريال</span></header>
    <div className={`canvas ${search?'has-results':''}`}>
-    <div className="page-heading"><div><span className="eyebrow">من أول بحث، خلك على بيّنة</span><h1>كل متاجرك.<br className="mobile-break"/> في بحث واحد.</h1><p>دور على منتجك، وقارن السعر والحجم قبل ما تشتري.</p></div><span className="live-label"><span className="status-dot"/> {available.length} متاجر جاهزة للبحث</span></div>
+    <div className="page-heading"><div><span className="eyebrow">من أول بحث، خلك على بيّنة</span><h1>نفس احتياجك.<br className="mobile-break"/> قرار أوضح.</h1><p>قارن أسعار المقاضي ومنتجات الصيدليات، في بحث واحد.</p></div><span className="live-label"><span className="status-dot"/> {available.length} {available.length===1?'مصدر جاهز':'مصادر جاهزة'} للبحث</span></div>
     <section className="search-card" aria-label="بحث المنتجات">
-     <form onSubmit={submit}><label htmlFor="query">وش ناوي تشتري؟</label><div className="search-line"><div className="search-input"><SearchIcon/><input ref={queryInput} id="query" name="q" type="search" value={term} onChange={e=>setTerm(e.target.value)} maxLength={200} placeholder="اسم المنتج أو العلامة" autoComplete="off" enterKeyHint="search"/></div><button className="primary search-submit" aria-label="ابحث وقارن" disabled={!term.trim()||!selected.length}><span className="search-label-long">ابحث وقارن</span><span className="search-label-short">ابحث</span><span className="search-arrow" aria-hidden="true">←</span></button></div><div className="search-meta"><span>{selected.length?'أضف النوع والحجم لنتائج أدق':'اختر متجرًا واحدًا على الأقل للبحث'}</span><span>السعر قد يختلف حسب الفرع والتوصيل</span></div></form>
-     <button className="merchant-trigger" onClick={openPicker} aria-label="تغيير متاجر البحث" aria-describedby="selected-stores-count"><span className="merchant-avatars" aria-hidden="true">{available.filter(s=>selected.includes(s.id)).slice(0,3).map(s=><StoreLogo key={s.id} src={s.logo} name={s.name}/>)}</span><span id="selected-stores-count">{selected.length===available.length?'كل المتاجر':selected.length===1?'متجر واحد':selected.length===2?'متجران':selected.length?`${selected.length} متاجر`:'لم تختر متاجر'}<small>للبحث القادم</small></span><span className="merchant-change">تغيير <span aria-hidden="true">⌄</span></span></button>
+     <div className="scope-picker" role="group" aria-label="نوع المتاجر">{scopes.map(s=><button key={s.id} aria-pressed={scope===s.id} onClick={()=>changeScope(s.id)}><span aria-hidden="true">{s.symbol}</span>{s.label}</button>)}</div>
+     <form onSubmit={submit}><label htmlFor="query">وش ناوي تشتري؟</label><div className="search-line"><div className="search-input"><SearchIcon/><input ref={queryInput} id="query" name="q" type="search" value={term} onChange={e=>setTerm(e.target.value)} maxLength={200} placeholder={scope==='pharmacy'?'اسم المنتج، التركيز أو حجم العبوة':'اسم المنتج أو العلامة'} autoComplete="off" enterKeyHint="search"/></div><button className="primary search-submit" aria-label="ابحث وقارن" disabled={!term.trim()||!selected.length}><span className="search-label-long">ابحث وقارن</span><span className="search-label-short">ابحث</span><span className="search-arrow" aria-hidden="true">←</span></button></div><div className="search-meta"><span>{selected.length?'أضف النوع والحجم لنتائج أدق':'اختر متجرًا واحدًا على الأقل للبحث'}</span><span>السعر قد يختلف حسب الفرع والتوصيل</span></div></form>
+     <button className="merchant-trigger" onClick={openPicker} aria-label="تغيير متاجر البحث" aria-describedby="selected-stores-count"><span className="merchant-avatars" aria-hidden="true">{available.filter(s=>selected.includes(s.id)).slice(0,3).map(s=><StoreLogo key={s.id} src={s.logo} name={s.name}/>)}</span><span id="selected-stores-count">{selected.length?`نبحث في ${selected.length===1?(scope==='pharmacy'?'صيدلية واحدة':'مصدر واحد'):selected.length===2?(scope==='pharmacy'?'صيدليتين':'مصدرين'):`${selected.length} ${scope==='pharmacy'?'صيدليات':'مصادر'}`}`:'حدد مصادر البحث'}<small>{scope==='all'?'المقاضي والصيدليات':scope==='pharmacy'?'منتجات الصيدليات':'متاجر المقاضي'}</small></span><span className="merchant-change">تغيير <span aria-hidden="true">⌄</span></span></button>
     </section>
-    {!search&&<div className="suggestions" aria-label="اقتراحات بحث"><span>جرّب</span>{['حليب المراعي','صدور دجاج ساديا','بيبسي'].map(q=><button disabled={!selected.length} key={q} onClick={()=>start(q)}>{q}<span aria-hidden="true">↖</span></button>)}</div>}
+    {!search&&<div className="suggestions" aria-label="اقتراحات بحث"><span>جرّب</span>{(scope==='pharmacy'?['سيتافيل','حليب أطفال','معجون أسنان']:scope==='all'?['حليب المراعي','شامبو','معجون أسنان']:['حليب المراعي','صدور دجاج ساديا','بيبسي']).map(q=><button disabled={!selected.length} key={q} onClick={()=>start(q)}>{q}<span aria-hidden="true">↖</span></button>)}</div>}
     {!search&&history.length>0&&<section className="recent-searches" aria-label="آخر عمليات البحث"><div className="recent-heading"><h2>آخر بحث لك</h2><button className="text-button" onClick={()=>{setHistory([]);try{localStorage.removeItem(HISTORY_KEY);}catch{}}}>مسح السجل</button></div><div className="recent-items">{history.map(q=><button key={q} disabled={!selected.length} onClick={()=>start(q)}><span aria-hidden="true">↺</span>{q}</button>)}</div></section>}
+    {scope==='pharmacy'&&<p className="pharmacy-note">قارن سعر المنتج نفسه؛ تأكد من التركيز والشكل وعدد الوحدات. تسعيرة لا يقترح بدائل علاجية.</p>}
     <div role="status" aria-live="polite" className={notice?'notice':'sr-only'}>{notice}</div>
     {search?<SearchResults key={search.startedAt} search={search} onRetry={retry} onCancel={cancel} onShare={share} loading={loading}/>:<>
-     <section className="home-merchants" aria-label="المتاجر المتاحة"><div className="home-section-title"><h2>نبحث لك في</h2><span>{available.length} متاجر · أسعار من المصدر</span></div><div className="merchant-strip">{available.map(store=><div key={store.id}><StoreLogo src={store.logo} name={store.name}/><span>{store.name}</span></div>)}</div></section>
-     <section className="comparison-tip"><span className="tip-symbol" aria-hidden="true">↔</span><div><h2>السعر لحاله ما يكفي.</h2><p>اختر عرضين وقارن الحجم وعدد العبوات وسعر الوحدة.</p><div className="tip-sizes" aria-hidden="true"><span>1 لتر</span><span>12 × 1 لتر</span><small>عبوات مختلفة، مقارنة أوضح</small></div></div></section>
-     <section className="how-it-works" id="how-it-works" aria-label="كيف تستخدم تسعيرة">{[['01','ابحث عن منتجك','العلامة والنوع والحجم تساعدك توصل أسرع.'],['02','اختر العروض المناسبة','أضف عرضين إلى أربعة للمقارنة.'],['03','راجع ثم تسوّق','قارن العبوة والوحدة، وتحقق لدى المتجر.']].map(([n,title,description])=><div key={n}><span>{n}</span><h3>{title}</h3><p>{description}</p></div>)}</section>
+     <section className="home-merchants" aria-label="المتاجر المتاحة"><div className="home-section-title"><h2>{scope==='pharmacy'?'صيدليات بحثك':scope==='grocery'?'متاجر مقاضيك':'نبحث لك في'}</h2><span>{available.length} {available.length===1?'مصدر':'مصادر'} · أسعار من المصدر</span></div><div className="merchant-strip">{available.map(store=><div key={store.id}><StoreLogo src={store.logo} name={store.name}/><span>{store.name}</span></div>)}</div></section>
+     <section className="comparison-tip"><span className="tip-symbol" aria-hidden="true">↔</span><div><h2>{scope==='pharmacy'?'نفس المنتج، نفس التفاصيل.':'السعر لحاله ما يكفي.'}</h2><p>{scope==='pharmacy'?'راجع التركيز والشكل وعدد الوحدات قبل مقارنة سعر العبوة.':'اختر عرضين وقارن الحجم وعدد العبوات وسعر الوحدة.'}</p><div className="tip-sizes" aria-hidden="true"><span>{scope==='pharmacy'?'التركيز':'1 لتر'}</span><span>{scope==='pharmacy'?'الشكل والعدد':'12 × 1 لتر'}</span><small>{scope==='pharmacy'?'التفاصيل أولًا، ثم السعر':'عبوات مختلفة، مقارنة أوضح'}</small></div></div></section>
+     <section className="how-it-works" id="how-it-works" aria-label="كيف تستخدم تسعيرة">{[['01','ابحث عن منتجك','العلامة والنوع والحجم تساعدك توصل أسرع.'],['02','اختر العروض المناسبة','أضف عرضين إلى أربعة للمقارنة.'],['03','راجع ثم تسوّق',scope==='pharmacy'?'راجع تفاصيل المنتج، وتحقق لدى الصيدلية.':'قارن العبوة والوحدة، وتحقق لدى المتجر.']].map(([n,title,description])=><div key={n}><span>{n}</span><h3>{title}</h3><p>{description}</p></div>)}</section>
      <p className="home-reassurance"><span>بدون تسجيل دخول</span><span>روابط المتاجر الأصلية</span><span>الأسعار بالريال</span></p>
     </>}
     <footer><span>تسعيرة · قرار شراء أوضح</span><span>الأسعار وقت الجلب ولا تشمل التوصيل. الفرع والعنوان والبائع قد يغيّرون السعر والتوفر.</span></footer>
    </div>
   </main>
   <dialog ref={dialog} className="store-sheet" aria-labelledby="store-sheet-title" onClose={()=>setPicker(false)} onClick={event=>{if(event.target===event.currentTarget){const rect=event.currentTarget.getBoundingClientRect();if(event.clientY<rect.top||event.clientY>rect.bottom||event.clientX<rect.left||event.clientX>rect.right)setPicker(false);}}}>
-   <div className="sheet-grip" aria-hidden="true"/><div className="sheet-heading"><div><h2 id="store-sheet-title">وين نبحث لك؟</h2><p>اختر المتاجر اللي تبي تقارن بينها.</p></div><button className="icon-button" aria-label="إغلاق اختيار المتاجر" onClick={()=>setPicker(false)}>×</button></div>
-   <div className="sheet-content"><StoreChoices selected={draftStores} choose={setDraftStores}/><p className="sheet-scope">الأسعار حسب نطاق كل متجر؛ تأكد من الفرع والتوصيل عند الشراء.</p></div>
+   <div className="sheet-grip" aria-hidden="true"/><div className="sheet-heading"><div><h2 id="store-sheet-title">وين نبحث لك؟</h2><p>{scope==='pharmacy'?'اختر الصيدليات التي يشملها بحثك.':scope==='grocery'?'اختر متاجر المقاضي التي يشملها بحثك.':'اختر المتاجر والصيدليات التي يشملها بحثك.'}</p></div><button className="icon-button" aria-label="إغلاق اختيار المتاجر" onClick={()=>setPicker(false)}>×</button></div>
+   <div className="sheet-content"><StoreChoices selected={draftStores} choose={setDraftStores} scope={scope}/><p className="sheet-scope">الأسعار حسب نطاق كل متجر؛ تأكد من الفرع والتوصيل عند الشراء.</p></div>
    <div className="sheet-footer"><span aria-live="polite">{draftStores.length?`المحدد: ${draftStores.length} من ${available.length}`:'اختر متجرًا واحدًا على الأقل'}</span><button className="primary" disabled={!draftStores.length} onClick={()=>{choose(draftStores);setPicker(false);if(search)start(term.trim()||search.term,draftStores);}}>{search?'تحديث البحث':'اعتماد المتاجر'} <span aria-hidden="true">✓</span></button></div>
   </dialog>
- </div>;
+ </div></>;
 }
 
-function StoreChoices({selected,choose}:{selected:StoreId[];choose:(ids:StoreId[])=>void}){
- return <><button className="select-all" onClick={()=>choose(selected.length===available.length?[]:available.map(s=>s.id))}>{selected.length===available.length?'إلغاء تحديد الكل':'تحديد كل المتاجر'}</button><fieldset className="store-choices"><legend className="sr-only">المتاجر التي سيشملها البحث القادم</legend>{available.map(store=><label className={`store-option ${selected.includes(store.id)?'chosen':''}`} key={store.id}><StoreLogo src={store.logo} name={store.name}/><span><strong>{store.name}</strong><small>{store.english}</small></span><input type="checkbox" aria-label={store.name} checked={selected.includes(store.id)} onChange={()=>choose(selected.includes(store.id)?selected.filter(id=>id!==store.id):[...selected,store.id])}/></label>)}</fieldset><details className="upcoming"><summary>متاجر نعمل على إضافتها</summary>{stores.filter(s=>!s.enabled).map(store=><div className="store-option unavailable" key={store.id}><StoreLogo src={store.logo} name={store.name}/><span>{store.name}</span><small>قريبًا</small></div>)}</details></>;
+function StoreChoices({selected,choose,scope}:{selected:StoreId[];choose:(ids:StoreId[])=>void;scope:SearchScope}){
+ const available=scopeStores(scope),upcoming=stores.filter(s=>!s.enabled&&(scope==='all'||s.category===scope));
+ return <><button className="select-all" onClick={()=>choose(selected.length===available.length?[]:available.map(s=>s.id))}>{selected.length===available.length?'إلغاء تحديد الكل':'تحديد كل المتاجر'}</button><fieldset className="store-choices"><legend className="sr-only">المتاجر التي سيشملها البحث القادم</legend>{available.map(store=><label className={`store-option ${selected.includes(store.id)?'chosen':''}`} key={store.id}><StoreLogo src={store.logo} name={store.name}/><span><strong>{store.name}</strong><small>{store.english}</small></span><input type="checkbox" aria-label={store.name} checked={selected.includes(store.id)} onChange={()=>choose(selected.includes(store.id)?selected.filter(id=>id!==store.id):[...selected,store.id])}/></label>)}</fieldset>{upcoming.length>0&&<details className="upcoming"><summary>متاجر نعمل على إضافتها</summary>{upcoming.map(store=><div className="store-option unavailable" key={store.id}><StoreLogo src={store.logo} name={store.name}/><span>{store.name}</span><small>قريبًا</small></div>)}</details>}</>;
 }

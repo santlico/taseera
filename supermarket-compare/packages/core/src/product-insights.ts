@@ -10,6 +10,7 @@ const aliases: [RegExp, string][] = [
   [/\b(almarai|al marai)\b|المراعي/g, 'المراعي'], [/\bsadia\b|ساديا/g, 'ساديا'],
   [/\bpepsi\b|بيبسي/g, 'بيبسي'], [/\b(coca cola|cocacola)\b|كوكا كولا/g, 'كوكاكولا'],
   [/\brainbow\b|رينبو/g, 'رينبو'], [/\bnadec\b|نادك/g, 'نادك'], [/\bnido\b|نيدو/g, 'نيدو'],
+  [/\bpanadol\b|بانادول|بنادول/g, 'بانادول'], [/\bcetaphil\b|سيتافيل/g, 'سيتافيل'],
   [/\bmilk\b|حليب/g, 'حليب'], [/\bchicken\b|دجاج/g, 'دجاج'], [/\bbreasts?\b|صدور/g, 'صدور'],
   [/\bfull fat\b|كامل الدسم/g, 'كاملدسم'], [/\blow fat\b|قليل الدسم/g, 'قليلدسم'],
   [/\b(skimmed|skim|fat free)\b|خالي الدسم/g, 'خاليدسم'],
@@ -70,6 +71,13 @@ export function productFacts(product: Pick<Product, 'name' | 'size' | 'price'>):
 
 /** Relevance is a search aid, never an assertion of identical products. */
 export function searchRelevance(product: Product, query: string): number {
+  // Pharmacy search is conservative about explicit numbers (strength, count,
+  // stage). This is a literal search filter, not clinical equivalence.
+  if(product.store==='nahdi'){
+    const wanted=normalizeText(query).match(/\d+(?:\.\d+)?/g)??[];
+    const present=new Set(normalizeText(product.name).match(/\d+(?:\.\d+)?/g)??[]);
+    if(wanted.some(n=>!present.has(n)))return 0;
+  }
   const queryTokens = [...new Set(tokens(query).filter(t => !/^\d/.test(t)))];
   const desired = productFacts({name: query, price: 1});
   const actual = productFacts(product);
