@@ -1,5 +1,5 @@
 import type {StoreId} from '@market/core';
-export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scope:string;logo:string;category:'grocery'|'pharmacy'}[]=[
+export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scope:string;logo:string;category:'grocery'|'pharmacy'|'beauty'}[]=[
  {id:'danube',name:'الدانوب',english:'Danube',enabled:true,category:'grocery',scope:'الريان، الرياض · الروابي',logo:'/stores/danube.png'},
  {id:'carrefour',name:'كارفور',english:'Carrefour',enabled:true,category:'grocery',scope:'Granada - Riyadh · افتراضي',logo:'/stores/carrefour.png'},
  {id:'tamimi',name:'التميمي',english:'Tamimi Markets',enabled:true,category:'grocery',scope:'سعر الموقع الافتراضي',logo:'/stores/tamimi.png'},
@@ -14,6 +14,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'whites',name:'وايتس',english:'Whites Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · الكتالوج العام دون تحديد طريقة التوصيل',logo:'/stores/whites.png'},
  {id:'innova',name:'إنوفا',english:'Innova Pharmacy',enabled:true,category:'pharmacy',scope:'السعودية · عنوان وطريقة الشحن غير محددين',logo:'/stores/innova.png'},
  {id:'lemon',name:'ليمون',english:'Lemon Pharmacy',enabled:false,category:'pharmacy',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/lemon.png'},
+ {id:'daralamirat',name:'دار الأميرات',english:'Dar Al Amirat',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/daralamirat.png'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
