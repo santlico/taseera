@@ -1,8 +1,13 @@
 import {createHash,createHmac,randomUUID,timingSafeEqual} from 'node:crypto';
 import {stores} from '../../store-catalog';
-import {isRecommendationReason,parseRecommendation,type RecommendationReason} from '../../../../../packages/core/src/recommendations';
+import {emptyRecommendation,isRecommendationReason,parseRecommendation,type RecommendationReason} from '../../../../../packages/core/src/recommendations';
 export const version=process.env.VERCEL_DEPLOYMENT_ID||process.env.VERCEL_GIT_COMMIT_SHA||'local-development';
 export function redisConfig(){const url=process.env.UPSTASH_REDIS_REST_URL||process.env.KV_REST_API_URL;const token=process.env.UPSTASH_REDIS_REST_TOKEN||process.env.KV_REST_API_TOKEN;return url&&token?{url,token}:null;}
+// Development preview only: never substitute per-worker memory for public Redis storage.
+const localVotes=new Map<string,Map<string,RecommendationReason>>(),localRates=new Map<string,{count:number;until:number}>();
+const localSecret=randomUUID();
+export function recommendationConfig(){return redisConfig()||(process.env.NODE_ENV==='development'&&!process.env.VERCEL?{token:localSecret,local:true}:null);}
+function localSummary(p:{store:string;id:string},voter:string){const result=emptyRecommendation(),votes=localVotes.get(p.store+':'+p.id);if(votes)for(const [user,reason] of votes){result.total++;result.reasons[reason]++;if(user===voter)result.mine=reason;}return result;}
 const cookieName='taseera-recommender';
 export function visitor(request:Request,secret:string){
  const raw=request.headers.get('cookie')?.split(';').map(s=>s.trim()).find(s=>s.startsWith(cookieName+'='))?.slice(cookieName.length+1)||'';
@@ -38,12 +43,21 @@ async function evalRedis(script:string,keys:string[],args:string[],signal:AbortS
 }
 export async function readRecommendations(products:unknown[],voter:string,signal:AbortSignal){
  if(!Array.isArray(products)||!products.length||products.length>100)throw new Error('INVALID_PRODUCTS');
- const identities=products.map(productIdentity);const result=await evalRedis(queryScript,identities.map(key),[voter],signal);
+ const identities=products.map(productIdentity);
+ if(recommendationConfig()&&'local' in recommendationConfig()!)return Object.fromEntries(identities.map(p=>[p.store+':'+p.id,localSummary(p,voter)]));
+ const result=await evalRedis(queryScript,identities.map(key),[voter],signal);
  if(!Array.isArray(result)||result.length!==identities.length)throw new Error('STORAGE_FAILED');
  return Object.fromEntries(identities.map((p,i)=>[p.store+':'+p.id,parseRecommendation(result[i])]));
 }
 export async function saveRecommendation(product:unknown,reason:unknown,voter:string,signal:AbortSignal){
  const p=productIdentity(product);if(!(reason==='remove'||isRecommendationReason(reason)))throw new Error('INVALID_REASON');
+ if(recommendationConfig()&&'local' in recommendationConfig()!){
+  const now=Date.now();for(const [user,rate] of localRates)if(rate.until<=now)localRates.delete(user);
+  const rate=localRates.get(voter)||{count:0,until:now+60000};localRates.set(voter,rate);if(++rate.count>30)throw new Error('RATE_LIMIT');
+  const id=p.store+':'+p.id,votes=localVotes.get(id)||new Map<string,RecommendationReason>();
+  if(reason==='remove')votes.delete(voter);else{if(!votes.has(voter)&&votes.size>=10000)throw new Error('VOTE_LIMIT');votes.set(voter,reason);}
+  if(votes.size)localVotes.set(id,votes);else localVotes.delete(id);return localSummary(p,voter);
+ }
  const result=await evalRedis(voteScript,[key(p),`taseera:rec:{${version}}:rate:${voter}`],[voter,reason as RecommendationReason],signal);
  if(result.error)throw new Error(result.error);return parseRecommendation(result);
 }

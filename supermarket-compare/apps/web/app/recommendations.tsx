@@ -1,21 +1,27 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import type {Product} from '@market/core';
+import {loadRecommendationBatch} from './recommendations-client';
 import {emptyRecommendation,parseRecommendation,recommendationReasons,type ProductRecommendation,type RecommendationReason} from '../../../packages/core/src/recommendations';
 export const recommendationKey=(p:Pick<Product,'store'|'id'>)=>`${p.store}:${p.id}`;
 export function useRecommendations(products:Product[]){
  const [votes,setVotes]=useState<Record<string,ProductRecommendation>>({}),[available,setAvailable]=useState<boolean|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState<string|null>(null),[error,setError]=useState('');
  const epochs=useRef<Record<string,number>>({}),writing=useRef(false);
+ const [local,setLocal]=useState(false),[partial,setPartial]=useState(false);
  const signature=JSON.stringify([...new Map(products.map(p=>[recommendationKey(p),{store:p.store,id:p.id}])).values()]);
  useEffect(()=>{
   const list=JSON.parse(signature) as {store:string;id:string}[];if(!list.length)return;
-  const controller=new AbortController();let alive=true;setLoading(true);
+  const controller=new AbortController();let alive=true;setLoading(true);setPartial(false);
   const timer=setTimeout(async()=>{
    try{
-    const snapshot={...epochs.current},next:Record<string,ProductRecommendation>={};
+    let succeeded=false,failed=false;
     // Sequential batches ensure a first anonymous visitor receives one stable cookie.
-    for(let i=0;i<list.length;i+=100){const response=await fetch('/api/recommendations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'query',products:list.slice(i,i+100)}),signal:controller.signal,cache:'no-store'});const data=await response.json();if(!response.ok||!data.available)throw new Error('unavailable');for(const [key,value] of Object.entries(data.votes||{}))next[key]=parseRecommendation(value);}
-    if(alive){setAvailable(true);setVotes(old=>({...old,...Object.fromEntries(Object.entries(next).filter(([key])=>(epochs.current[key]??0)===(snapshot[key]??0)))}));}
+    for(let i=0;i<list.length;i+=100){
+     const snapshot={...epochs.current};
+     try{const data=await loadRecommendationBatch(list.slice(i,i+100),controller.signal);succeeded=true;if(alive){setAvailable(true);setLocal(data.local);setVotes(old=>({...old,...Object.fromEntries(Object.entries(data.votes).filter(([key])=>(epochs.current[key]??0)===(snapshot[key]??0)))}));}}
+     catch{controller.signal.throwIfAborted();failed=true;}
+    }
+    if(alive){setAvailable(succeeded);setPartial(failed&&succeeded);}
    }catch{if(alive)setAvailable(false);}finally{if(alive)setLoading(false);}
   },350);
   return()=>{alive=false;clearTimeout(timer);controller.abort();};
@@ -23,10 +29,10 @@ export function useRecommendations(products:Product[]){
  async function vote(product:Product,reason:RecommendationReason|'remove'){
   if(writing.current)return false;writing.current=true;const key=recommendationKey(product);epochs.current[key]=(epochs.current[key]??0)+1;setBusy(key);setError('');
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
-  try{const response=await fetch('/api/recommendations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'vote',product:{store:product.store,id:product.id},reason}),signal:controller.signal});const data=await response.json();if(!response.ok)throw new Error(response.status===429?'تمهل قليلًا ثم حاول مجددًا.':'تعذّر حفظ التوصية. حاول مجددًا.');const result=parseRecommendation(data.vote);epochs.current[key]++;setVotes(old=>({...old,[key]:result}));return true;}
+  try{const response=await fetch('/api/recommendations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'vote',product:{store:product.store,id:product.id},reason}),signal:controller.signal});const data=await response.json();if(!response.ok)throw new Error(response.status===429?'تمهل قليلًا ثم حاول مجددًا.':'تعذّر حفظ التوصية. حاول مجددًا.');const result=parseRecommendation(data.vote);epochs.current[key]++;setAvailable(true);setLocal(data.local===true);setVotes(old=>({...old,[key]:result}));return true;}
   catch(e){setError(e instanceof Error&&/^(تمهل|تعذّر)/.test(e.message)?e.message:'تعذّر حفظ التوصية. تأكد من الاتصال وحاول مجددًا.');return false;}finally{clearTimeout(timer);writing.current=false;setBusy(null);}
  }
- return {votes,available,loading,busy,error,vote};
+ return {votes,available,loading,busy,error,vote,local,partial,clearError:()=>setError('')};
 }
 export function RecommendationButton({product,value,disabled,onRecommend}:{product:Product;value?:ProductRecommendation;disabled:boolean;onRecommend:()=>void}){
  const state=value||emptyRecommendation();
