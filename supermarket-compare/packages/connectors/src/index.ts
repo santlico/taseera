@@ -26,3 +26,5 @@ export {fetchHungerstationImage} from './stores/hungerstation/image';
 
 // Server-only registry. Never import this package into a browser component.
 export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, lulu];
+
+export {fetchGoldenscentImage,validGoldenscentImagePath} from './stores/goldenscent/image';
