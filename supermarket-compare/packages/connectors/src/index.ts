@@ -11,10 +11,11 @@ import { bindawood } from './stores/bindawood/index';
 import { amazon } from './stores/amazon/index';
 import { hungerstation } from './stores/hungerstation/index';
 import { noon } from './stores/noon/index';
+import { whites } from './stores/whites/index';
 import { united } from './stores/united/index';
 import { aldawaa } from './stores/aldawaa/index';
 import { nahdi } from './stores/nahdi/index';
 export {fetchHungerstationImage} from './stores/hungerstation/image';
 
 // Server-only registry. Never import this package into a browser component.
-export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, lulu];
+export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, lulu];

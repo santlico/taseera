@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {restoreSelection,scopeStores} from '../../../apps/web/app/search-scope';
 test('scope defaults to all including first pharmacy and isolates grocery and pharmacy sources',()=>{
  const state=restoreSelection(new URLSearchParams(),null,null);assert.equal(state.scope,'all');assert.ok(state.ids.includes('nahdi'));
- assert.deepEqual(scopeStores('pharmacy').map(s=>s.id),['nahdi','aldawaa','united']);assert.ok(scopeStores('grocery').every(s=>s.category!=='pharmacy'));
+ assert.deepEqual(scopeStores('pharmacy').map(s=>s.id),['nahdi','aldawaa','united','whites']);assert.ok(scopeStores('grocery').every(s=>s.category!=='pharmacy'));
 });
 test('scope restores preferences, preserves custom choices and migrates old all-store selections',()=>{
  assert.equal(restoreSelection(new URLSearchParams(),'all','pharmacy').scope,'pharmacy');

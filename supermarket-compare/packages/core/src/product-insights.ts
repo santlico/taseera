@@ -73,7 +73,7 @@ export function productFacts(product: Pick<Product, 'name' | 'size' | 'price'>):
 export function searchRelevance(product: Product, query: string): number {
   // Pharmacy search is conservative about explicit numbers (strength, count,
   // stage). This is a literal search filter, not clinical equivalence.
-  if(product.store==='nahdi'||product.store==='aldawaa'||product.store==='united'){
+  if(product.store==='nahdi'||product.store==='aldawaa'||product.store==='united'||product.store==='whites'){
     const wanted=normalizeText(query).match(/\d+(?:\.\d+)?/g)??[];
     const present=new Set(normalizeText(product.name).match(/\d+(?:\.\d+)?/g)??[]);
     if(wanted.some(n=>!present.has(n)))return 0;

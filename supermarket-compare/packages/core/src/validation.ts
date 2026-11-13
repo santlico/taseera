@@ -6,6 +6,7 @@ const domains: Record<StoreId, string[]> = {
   nahdi: ['www.nahdionline.com'],
   aldawaa: ['www.al-dawaa.com'],
   united: ['unitedpharmacy.sa'],
+  whites: ['www.whites.sa'],
   danube: ['www.danube.sa', 'danube.sa'], bindawood: ['www.bindawood.sa', 'bindawood.sa'],
   carrefour: ['www.carrefourksa.com'], tamimi: ['shop.tamimimarkets.com'], ninja: ['ananinja.com'],
   amazon: ['www.amazon.sa', 'amazon.sa'], lulu: ['gcc.luluhypermarket.com'], othaim: [], sadhan: [],
