@@ -1,5 +1,6 @@
 import type {ConnectorSearchResult,Product,SearchQuery} from '@market/core';
 import {fetchStoreDocument} from '../../shared/http';
+import publicSearchSettings from './public-search-settings.json';
 type Config={applicationId:string;apiKey:string;indexName:string};
 
 export function parseUnitedConfig(html:string):Config {
@@ -36,8 +37,12 @@ export function parseUnitedResponse(data:unknown,term:string,now=new Date()):Pro
 export async function searchUnited(query:SearchQuery,signal:AbortSignal):Promise<ConnectorSearchResult>{
   if(query.storeLocationId)throw new Error('United custom delivery address not supported');
   const home=await fetchStoreDocument('united','https://unitedpharmacy.sa/ar/',{signal});
-  if(!home.response.ok)throw new Error(`United configuration HTTP ${home.response.status}`);
-  const c=parseUnitedConfig(home.text);
+  // Some hosted IPs cannot read the homepage even though the public search
+  // endpoint accepts anonymous queries. The fallback is the same public,
+  // search-only configuration published on that page, verified 2026-11-13.
+  // It contains no customer token and never substitutes cached product data.
+  if(!home.response.ok&&home.response.status!==403)throw new Error(`United configuration HTTP ${home.response.status}`);
+  const c=home.response.status===403?publicSearchSettings:parseUnitedConfig(home.text);
   const url=new URL(`https://${c.applicationId.toLowerCase()}-dsn.algolia.net/1/indexes/${c.indexName}/query`);
   const {response,text}=await fetchStoreDocument('united',url,{signal,method:'POST',headers:{Accept:'application/json','Content-Type':'application/json',
     'X-Algolia-Application-Id':c.applicationId,'X-Algolia-API-Key':c.apiKey},

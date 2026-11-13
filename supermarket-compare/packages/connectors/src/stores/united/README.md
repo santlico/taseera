@@ -1,10 +1,14 @@
 # United Pharmacy
 
 Reads the public `window.algoliaConfig` JSON literal from the Saudi Arabic
-homepage, without executing scripts or persisting the public search key.
+homepage, without executing scripts.
 Uses the site's public Algolia search index `<indexName>_products` and guest
 SAR.default price context. No account, private key, or browser session needed.
-Settings are discovered each search so public key rotation is supported.
+Settings are discovered each search so public key rotation is supported. If the
+homepage returns HTTP 403 from hosting IPs, use the last verified public
+search-only configuration in public-search-settings.json (2026-11-13). This
+is the public storefront key, not an account credential; product data and
+prices are always fetched live from the public search endpoint.
 
 Initial scope: first 20 visible search products, Jeddah default address declared
 in the storefront's instant-search config. Both Saudi guest price context and

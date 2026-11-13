@@ -29,3 +29,11 @@ test('United discovers public search settings and sends full query with Saudi vi
  });
  assert.equal((await searchUnited({term,city:'الرياض'},signal)).products.length,1);assert.equal(calls,2);
 });
+test('United hosted homepage denial falls back only to verified public search settings, never cached prices',async(t)=>{
+ let calls=0;t.mock.method(globalThis,'fetch',async(input:unknown)=>{
+  calls++;if(calls===1)return new Response('blocked',{status:403});
+  assert.match(String(input),/y1goq9dtv8-dsn.algolia.net/);return Response.json(response());
+ });
+ assert.equal((await searchUnited({term,city:'الرياض'},new AbortController().signal)).products[0].price,83.95);
+ assert.equal(calls,2);
+});
