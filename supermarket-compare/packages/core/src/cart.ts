@@ -18,9 +18,3 @@ export function addShoppingItem(items:ShoppingItem[],product:Product):ShoppingIt
  return found?items.map(i=>shoppingKey(i.product)===key?{product,quantity:Math.min(99,i.quantity+1)}:i):[...items,{product,quantity:1}];
 }
 export const shoppingTotal=(items:ShoppingItem[])=>items.reduce((n,i)=>n+Math.round(i.product.price*100)*i.quantity,0)/100;
-export const cartTransferStores={
- beautycare:{id:'345490712',origin:'https://beautycare.sa'},
- outlet:{id:'1030092989',origin:'https://outletpharmacyonline.sa'},
- daralamirat:{id:'1945128061',origin:'https://daralamirat.com.sa'},
-} as const;
-export const canTransferCart=(store:string):store is keyof typeof cartTransferStores=>Object.hasOwn(cartTransferStores,store);

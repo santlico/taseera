@@ -30,4 +30,4 @@ export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour,
 
 export {fetchGoldenscentImage,validGoldenscentImagePath} from './stores/goldenscent/image';
 
-export {prepareStoreCart} from './cart-transfer';
+
