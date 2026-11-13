@@ -15,7 +15,7 @@ test('Jarir uses the observed anonymous Saudi search endpoint, preserves model a
  const signal=new AbortController().signal;const term='ايفون 17 256 جيجابايت';
  t.mock.method(globalThis,'fetch',async(input:unknown,init?:RequestInit)=>{const url=new URL(String(input));assert.equal(url.origin,'https://ac.cnstrc.com');assert.equal(decodeURIComponent(url.pathname),'/v1/autocomplete/'+term);assert.equal(url.searchParams.get('key'),'key_g0Gi7pKaE5cyqDGl');assert.equal(url.searchParams.get('num_section_results_per_page[Products]'),'20');assert.equal(init?.signal,signal);assert.equal(new Headers(init?.headers).get('cookie'),null);return Response.json({request:{term},sections:{Products:[]}});});
  assert.deepEqual((await searchJarir({term,city:'الرياض'},signal)).products,[]);
- assert.deepEqual(scopeStores('electronics').map(s=>s.id),['jarir','extra']);assert.ok(scopeStores('all').some(s=>s.id==='jarir'));assert.ok(!scopeStores('grocery').some(s=>s.id==='jarir'));assert.equal(restoreSelection(new URLSearchParams('store=jarir'),null,null).scope,'electronics');
+ assert.deepEqual(scopeStores('electronics').map(s=>s.id),['jarir','extra','almanea']);assert.ok(scopeStores('all').some(s=>s.id==='jarir'));assert.ok(!scopeStores('grocery').some(s=>s.id==='jarir'));assert.equal(restoreSelection(new URLSearchParams('store=jarir'),null,null).scope,'electronics');
 });
 
 test('Jarir selects discounted final price and excludes generic recommendations when the term has no matches',()=>{

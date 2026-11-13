@@ -3,6 +3,7 @@ import type { Product, StoreId } from './index';
 const domains: Record<StoreId, string[]> = {
   jarir: ['www.jarir.com'],
   extra: ['www.extra.com'],
+  almanea: ['www.almanea.sa'],
   hungerstation: ['hungerstation.com'],
   noon: ['minutes.noon.com'],
   nahdi: ['www.nahdionline.com'],
