@@ -44,3 +44,13 @@ test('assistant production fails closed without shared limits; malformed and ove
  for(const body of ['null','{',JSON.stringify({...input,note:'x'.repeat(5000)}),JSON.stringify({...input,stores:['unknown']})]){const r=await POST(new Request(req.url,{method:'POST',headers:{origin:'https://taseera.test'},body}));assert.equal(r.status,400);}
  assert.equal(calls,0);
 });
+
+test('comparison accepts only two to four distinct selected source keys and resolves four literal evidence excerpts',async()=>{
+ const comparison={...input,budget:null,compare:['danube:1','danube:2','danube:3','danube:4']};
+ assert.deepEqual(validateInput(comparison).compare,comparison.compare);
+ for(const compare of [[],['danube:1'],['danube:1','danube:1'],['evil:1','danube:2'],['danube:1','danube:2','danube:3','danube:4','danube:5']])assert.throws(()=>validateInput({...comparison,compare}));
+ const products=['1','2','3','4'].map(id=>product(id));
+ const decoded=decodeAdvice({picks:products.map((p,i)=>({key:'p'+i,reason:'compare',evidence:'400 مل'})),question:'',refinedQuery:''},products,comparison);
+ assert.equal(decoded.picks.length,4);
+ await assert.rejects(suggestFromProducts(products.slice(0,3),comparison,new AbortController().signal),/SOURCES_UNAVAILABLE/);
+});
