@@ -8,6 +8,7 @@ import { carrefour } from './stores/carrefour/index';
 import { ninja } from './stores/ninja/index';
 import { bindawood } from './stores/bindawood/index';
 
+import {swsg} from './stores/swsg/index';
 import {almanea} from './stores/almanea/index';
 import {extra} from './stores/extra/index';
 import {jarir} from './stores/jarir/index';
@@ -29,7 +30,7 @@ import { nahdi } from './stores/nahdi/index';
 export {fetchHungerstationImage} from './stores/hungerstation/image';
 
 // Server-only registry. Never import this package into a browser component.
-export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, beautycare, jarir, extra, almanea, lulu];
+export const connectors: readonly StoreConnector[] = [othaim, danube, carrefour, sadhan, tamimi, ninja, bindawood, amazon, hungerstation, noon, nahdi, aldawaa, united, whites, innova, lemon, daralamirat, knooz, outlet, niceone, goldenscent, beautycare, jarir, extra, almanea, swsg, lulu];
 
 export {fetchGoldenscentImage,validGoldenscentImagePath} from './stores/goldenscent/image';
 

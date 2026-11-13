@@ -23,6 +23,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'jarir',name:'جرير',english:'Jarir',enabled:true,category:'electronics',scope:'السعودية · السعر شامل الضريبة والتوفر حسب العنوان',logo:'/stores/jarir.svg'},
  {id:'extra',name:'إكسترا',english:'eXtra',enabled:true,category:'electronics',scope:'السعودية · الرياض افتراضيًا، عروض المتجر وشركائه',logo:'/stores/extra.svg'},
  {id:'almanea',name:'المنيع',english:'Almanea',enabled:true,category:'electronics',scope:'السعودية · السعر شامل الضريبة والتوصيل حسب المدينة',logo:'/stores/almanea.webp'},
+ {id:'swsg',name:'الشتاء والصيف',english:'Summer & Winter',enabled:true,category:'electronics',scope:'السعودية · التوصيل والتركيب حسب العنوان',logo:'/stores/swsg.png'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
