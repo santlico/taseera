@@ -1,10 +1,7 @@
-import {load} from 'cheerio';
 import type {Product,SearchQuery,StoreConnector} from '@market/core';
 import {fetchStoreDocument} from '../../shared/http';
-export function blackboxGuestToken(html:string):string{
- let d:any;try{d=JSON.parse(load(html)('#__NEXT_DATA__').text());}catch{throw new Error('Blackbox guest bootstrap missing');}
- const token=d?.props?.pageProps?.initialHandshake;
- if(d.locale!=='ar'||typeof token!=='string'||token.length>8192||!/^[-\w]+\.[-\w]+\.[-\w]+$/.test(token))throw new Error('Blackbox guest context invalid');
+export function blackboxGuestToken(token:unknown):string{
+ if(typeof token!=='string'||token.length>8192||!/^[-\w]+\.[-\w]+\.[-\w]+$/.test(token))throw new Error('Blackbox guest context invalid');
  let claims:any;try{claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url').toString('utf8'));}catch{throw new Error('Blackbox guest context invalid');}
  if(claims.storeName!=='ar'||typeof claims.exp!=='number'||!Number.isFinite(claims.exp)||claims.exp*1000<=Date.now())throw new Error('Blackbox guest context expired');
  return token;
@@ -28,9 +25,10 @@ export function parseBlackboxResponse(payload:unknown):Product[]{
 export async function searchBlackbox(query:SearchQuery,signal:AbortSignal){
  if(query.storeLocationId)throw new Error('Blackbox custom delivery region not supported');
  // Obtain a fresh anonymous storefront handshake, never a signed-in user's session.
- const bootstrap=await fetchStoreDocument('blackbox','https://www.blackbox.com.sa/',{signal,redirect:'error'});
+ const bootstrap=await fetchStoreDocument('blackbox','https://api.ops.blackbox.com.sa/api/v1/handshake',{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({store:'ar'}),signal,redirect:'error'});
  if(!bootstrap.response.ok)throw new Error(`Blackbox bootstrap HTTP ${bootstrap.response.status}`);
- const token=blackboxGuestToken(bootstrap.text);
+ let guest:any;try{guest=JSON.parse(bootstrap.text);}catch{throw new Error('Blackbox guest bootstrap invalid');}
+ const token=blackboxGuestToken(guest?.token);
  const url=new URL('https://api.ops.blackbox.com.sa/api/v1/search_rules/products/searchQuery');
  for(const [key,value] of Object.entries({search:query.term,pageNo:'0',pageSize:'30',sortBy:'default',sortDir:'ASC'}))url.searchParams.set(key,value);
  for(const field of ['sku','entity_id','name','prices_with_tax','_media_','rewrite_url','stock','option_text_brand','option_text_a_brand'])url.searchParams.append('select',field);
