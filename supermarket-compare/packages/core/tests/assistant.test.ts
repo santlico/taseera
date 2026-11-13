@@ -54,3 +54,10 @@ test('comparison accepts only two to four distinct selected source keys and reso
  assert.equal(decoded.picks.length,4);
  await assert.rejects(suggestFromProducts(products.slice(0,3),comparison,new AbortController().signal),/SOURCES_UNAVAILABLE/);
 });
+
+test('equivalent Arabic digits in model evidence resolve back to the actual merchant name, never an invented specification',()=>{
+ const p={...product(),name:'حليب المراعي ١.٤ لتر'};
+ const answer=decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'1.4 لتر'}],question:'',refinedQuery:''},[p],input);
+ assert.equal(answer.picks[0].evidence,p.name);
+ assert.throws(()=>decodeAdvice({picks:[{key:'p0',reason:'match',evidence:'2.4 لتر'}],question:'',refinedQuery:''},[p],input));
+});
