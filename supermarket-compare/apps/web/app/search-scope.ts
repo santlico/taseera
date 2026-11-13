@@ -1,7 +1,7 @@
 import type {StoreId} from '@market/core';
 import {stores} from './store-catalog';
-export type SearchScope='all'|'grocery'|'pharmacy'|'beauty';
-export const scopes=[{id:'all',label:'الكل',symbol:'✦'},{id:'grocery',label:'المقاضي',symbol:'▧'},{id:'pharmacy',label:'الصيدليات',symbol:'+'},{id:'beauty',label:'العناية والجمال',symbol:'♡'}] as const;
+export type SearchScope='all'|'grocery'|'pharmacy'|'beauty'|'electronics';
+export const scopes=[{id:'all',label:'الكل',symbol:'✦'},{id:'grocery',label:'المقاضي',symbol:'▧'},{id:'pharmacy',label:'الصيدليات',symbol:'+'},{id:'beauty',label:'العناية والجمال',symbol:'♡'},{id:'electronics',label:'الإلكترونيات',symbol:'▱'}] as const;
 export const validScope=(value:unknown):value is SearchScope=>scopes.some(s=>s.id===value);
 export const scopeStores=(scope:SearchScope)=>stores.filter(s=>s.enabled&&(scope==='all'||s.category===scope));
 export function restoreSelection(params:URLSearchParams,saved:unknown,savedScope:unknown){

@@ -23,7 +23,7 @@ h1{font-size:clamp(36px,9.8vw,46px);line-height:1.35;letter-spacing:-1.2px;font-
 .page-heading p{font-size:14px;line-height:1.9;max-width:340px;margin-top:14px;color:var(--muted)}
 .live-label{display:none}
 .search-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:16px;box-shadow:0 12px 40px #10213e06}
-.scope-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;background:transparent;border-radius:0;padding:0 0 18px;margin:0 0 18px;border-bottom:1px solid var(--line);max-width:none}
+.scope-picker{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;background:transparent;border-radius:0;padding:0 0 18px;margin:0 0 18px;border-bottom:1px solid var(--line);max-width:none}
 .scope-picker button{min-width:0;min-height:90px;flex-direction:column;gap:9px;border:1px solid transparent;background:none;border-radius:15px;padding:10px 2px;color:var(--muted);font-size:11px;white-space:normal;line-height:1.5;font-weight:500}
 .scope-picker button>.scope-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:#edf2ff;color:#245ce6}
 .scope-picker .scope-icon-grocery{background:#e8f5f5;color:#156b73}.scope-picker .scope-icon-pharmacy{background:#e9f1ff;color:#315b9d}.scope-picker .scope-icon-beauty{background:#edf4ff;color:#326b9f}
@@ -71,3 +71,6 @@ button:active:not(:disabled){transform:translateY(1px) scale(.985)}
 @keyframes search-arrive{from{opacity:.7;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:no-preference){.canvas:not(.has-results) .page-heading{animation:search-arrive .5s var(--ease) both}.canvas:not(.has-results) .search-card{animation:search-arrive .6s var(--ease) both}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}button:active:not(:disabled){transform:none}}
+
+.scope-picker .scope-icon-electronics{background:#eaf0ff;color:#3558ad}
+@media(max-width:599px){.scope-picker button{font-size:10px}.scope-picker button>.scope-icon{width:34px;height:34px}.scope-picker .ui-icon{width:21px;height:21px}}

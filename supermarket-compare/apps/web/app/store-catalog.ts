@@ -1,5 +1,5 @@
 import type {StoreId} from '@market/core';
-export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scope:string;logo:string;category:'grocery'|'pharmacy'|'beauty'}[]=[
+export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scope:string;logo:string;category:'grocery'|'pharmacy'|'beauty'|'electronics'}[]=[
  {id:'danube',name:'الدانوب',english:'Danube',enabled:true,category:'grocery',scope:'الريان، الرياض · الروابي',logo:'/stores/danube.png'},
  {id:'carrefour',name:'كارفور',english:'Carrefour',enabled:true,category:'grocery',scope:'Granada - Riyadh · افتراضي',logo:'/stores/carrefour.png'},
  {id:'tamimi',name:'التميمي',english:'Tamimi Markets',enabled:true,category:'grocery',scope:'سعر الموقع الافتراضي',logo:'/stores/tamimi.png'},
@@ -20,6 +20,7 @@ export const stores: {id:StoreId;name:string;english:string;enabled:boolean;scop
  {id:'niceone',name:'نايس ون',english:'Nice One',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/niceone.svg'},
  {id:'outlet',name:'صيدلية أوتلت',english:'Outlet Pharmacy',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/outlet.webp'},
  {id:'knooz',name:'كنوز العناية',english:'Knooz Care',enabled:true,category:'beauty',scope:'السعودية · كتالوج الإنترنت دون تحديد عنوان',logo:'/stores/knooz.webp'},
+ {id:'jarir',name:'جرير',english:'Jarir',enabled:true,category:'electronics',scope:'السعودية · السعر شامل الضريبة والتوفر حسب العنوان',logo:'/stores/jarir.svg'},
  {id:'lulu',name:'لولو',english:'LuLu',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/lulu.png'},
  {id:'othaim',name:'العثيم',english:'Othaim',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/othaim.png'},
  {id:'sadhan',name:'السدحان',english:'Al Sadhan',enabled:false,category:'grocery',scope:'قيد الربط',logo:'/stores/sadhan.png'},
