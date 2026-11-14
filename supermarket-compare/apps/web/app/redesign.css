@@ -78,3 +78,13 @@ button:active:not(:disabled){transform:translateY(1px) scale(.985)}
 
 .search-clarify{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:16px;border:1px solid var(--line);border-radius:14px;background:white;margin:16px 0;font-size:13px}.search-clarify button{min-height:44px;padding:8px 16px;border:1px solid var(--line);border-radius:10px;color:var(--accent);background:#f3f7ff;font:inherit}.search-clarify small{flex-basis:100%;font-size:11px;color:var(--muted)}
 @media(max-width:800px){.has-results .search-card{position:static}}
+
+/* A single entrance when the merchant list becomes visible; no perpetual motion. */
+@media(prefers-reduced-motion:no-preference){
+ .merchants-motion-ready:not(.merchants-revealed) .merchant-strip>div{opacity:0;transform:translateY(10px)}
+ .merchants-revealed .merchant-strip>div{animation:merchant-arrive 460ms var(--ease) both;animation-delay:var(--merchant-delay,0ms)}
+ .merchant-strip .store-logo{transition:transform 180ms var(--ease),box-shadow 180ms var(--ease)}
+ .merchant-strip>div:active .store-logo{transform:translateY(-2px) scale(1.025);box-shadow:0 6px 16px #2459a512}
+ @media(hover:hover) and (pointer:fine){.merchant-strip>div:hover .store-logo{transform:translateY(-2px) scale(1.025);box-shadow:0 6px 16px #2459a512}}
+}
+@keyframes merchant-arrive{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
