@@ -1,5 +1,5 @@
 'use client';
-import {useEffect, useRef, useState, type FormEvent,type CSSProperties} from 'react';
+import {useEffect, useRef, useState, type FormEvent} from 'react';
 import type {StoreId} from '@market/core';
 import {stores} from './store-catalog';
 import {scopes,scopeStores,restoreSelection,type SearchScope} from './search-scope';
@@ -7,6 +7,7 @@ import {UiIcon} from './ui-icon';
 import {ShoppingCartButton} from './shopping-cart';
 import {Splash} from './splash';
 import {StoreLogo} from './store-logo';
+import {MerchantOrbit} from './merchant-orbit';
 import {SearchResults} from './search-results';
 import {requestStore, type LiveSearch, type LiveStoreResult} from './search-client';
 const allAvailable=scopeStores('all');
@@ -15,8 +16,6 @@ function SearchIcon(){return <svg width="21" height="21" viewBox="0 0 24 24" fil
 export default function Page(){
  const [scope,setScope]=useState<SearchScope>('all'),[ready,setReady]=useState(false);
  const [splashElapsed,setSplashElapsed]=useState(false);
- const merchantSection=useRef<HTMLElement>(null);
- const [merchantsArmed,setMerchantsArmed]=useState(false),[merchantsRevealed,setMerchantsRevealed]=useState(false);
  useEffect(()=>{const timer=setTimeout(()=>setSplashElapsed(true),3000);return()=>clearTimeout(timer);},[]);
  const available=scopeStores(scope);
  const [choices,setChoices]=useState<StoreId[]>(allAvailable.map(s=>s.id));
@@ -27,17 +26,6 @@ export default function Page(){
  const dialog=useRef<HTMLDialogElement>(null),queryInput=useRef<HTMLInputElement>(null);
  const [draftStores,setDraftStores]=useState<StoreId[]>(allAvailable.map(s=>s.id));
  const loading=!!search?.results.some(r=>r.status==='pending');
- useEffect(()=>{
-  if(!ready||!splashElapsed||search||merchantsRevealed)return;
-  const section=merchantSection.current;
-  if(!section||!('IntersectionObserver' in window)||window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
-  const preference=window.matchMedia('(prefers-reduced-motion: reduce)');
-  const reveal=()=>{setMerchantsRevealed(true);observer.disconnect();};
-  const observer=new IntersectionObserver(entries=>{if(entries.some(entry=>entry.isIntersecting))reveal();},{threshold:0.08});
-  const reduce=()=>{if(preference.matches)reveal();};
-  setMerchantsArmed(true);observer.observe(section);preference.addEventListener('change',reduce);
-  return()=>{observer.disconnect();preference.removeEventListener('change',reduce);};
- },[ready,splashElapsed,search,merchantsRevealed]);
 
  useEffect(()=>{
   const params=new URLSearchParams(window.location.search),query=params.get('q')?.trim().slice(0,200);
@@ -113,7 +101,7 @@ export default function Page(){
     {scope==='pharmacy'&&<p className="pharmacy-note">قارن سعر المنتج نفسه؛ تأكد من التركيز والشكل وعدد الوحدات. تسعيرة لا يقترح بدائل علاجية.</p>}
     <div role="status" aria-live="polite" className={notice?'notice':'sr-only'}>{notice}</div>
     {search?<SearchResults key={search.startedAt} search={search} onRetry={retry} onCancel={cancel} onShare={share} onRefine={q=>start(q)} loading={loading}/>:<>
-     <section ref={merchantSection} className={`home-merchants ${merchantsArmed?'merchants-motion-ready':''} ${merchantsRevealed?'merchants-revealed':''}`} aria-label="المتاجر المتاحة"><div className="home-section-title"><h2>{scope==='electronics'?'متاجر إلكترونياتك':scope==='pharmacy'?'صيدليات بحثك':scope==='grocery'?'متاجر مقاضيك':scope==='beauty'?'متاجر العناية والجمال':'نبحث لك في'}</h2><span>{available.length} {available.length===1?'مصدر':'مصادر'} · أسعار من المصدر</span></div><div className="merchant-strip">{available.map((store,index)=><div key={store.id} style={{'--merchant-delay':`${Math.min(index,11)*45}ms`} as CSSProperties}><StoreLogo src={store.logo} name={store.name}/><span>{store.name}</span></div>)}</div></section>
+     <section className="home-merchants" aria-label="المتاجر المتاحة"><div className="home-section-title"><h2>{scope==='electronics'?'متاجر إلكترونياتك':scope==='pharmacy'?'صيدليات بحثك':scope==='grocery'?'متاجر مقاضيك':scope==='beauty'?'متاجر العناية والجمال':'نبحث لك في'}</h2><span>{available.length} {available.length===1?'مصدر':'مصادر'} · أسعار من المصدر</span></div><MerchantOrbit stores={available} active={ready&&splashElapsed}/></section>
      <section className="comparison-tip"><span className="tip-symbol"><UiIcon name="compare"/></span><div><h2>{scope==='electronics'?'نفس الموديل، نفس المواصفات.':scope==='pharmacy'?'نفس المنتج، نفس التفاصيل.':'نفس المنتج؟ قارن حجم العبوة.'}</h2><p>{scope==='electronics'?'راجع السعة واللون ورقم الموديل والضمان قبل مقارنة السعر.':scope==='pharmacy'?'راجع التركيز والشكل وعدد الوحدات قبل مقارنة سعر العبوة.':'اختر عرضين وقارن الحجم وعدد العبوات وسعر الوحدة.'}</p><div className="tip-sizes" aria-hidden="true"><span>{scope==='electronics'?'256 GB':scope==='pharmacy'?'التركيز':'1 لتر'}</span><span>{scope==='electronics'?'512 GB':scope==='pharmacy'?'الشكل والعدد':'12 × 1 لتر'}</span><small>{scope==='electronics'?'مواصفات مختلفة، مقارنة أدق':scope==='pharmacy'?'التفاصيل أولًا، ثم السعر':'عبوات مختلفة، مقارنة أوضح'}</small></div></div></section>
      <section className="how-it-works" id="how-it-works" aria-label="كيف تستخدم تسعيرة">{[['01','ابحث عن منتجك','العلامة والنوع والحجم تساعدك توصل أسرع.'],['02','اختر العروض المناسبة','أضف عرضين إلى أربعة للمقارنة.'],['03','راجع ثم تسوّق',scope==='pharmacy'?'راجع تفاصيل المنتج، وتحقق لدى الصيدلية.':'قارن العبوة والوحدة، وتحقق لدى المتجر.']].map(([n,title,description])=><div key={n}><span>{n}</span><h3>{title}</h3><p>{description}</p></div>)}</section>
      <p className="home-reassurance"><span>بدون تسجيل دخول</span><span>روابط المتاجر الأصلية</span><span>الأسعار بالريال</span></p>
